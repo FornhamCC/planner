@@ -17,6 +17,11 @@
 <meta http-equiv="Content-Security-Policy"
       content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self' https://api.github.com; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
+<!-- Nice to Have 4: stop iPad Safari turning dates (and anything that looks like a
+     phone number, address or email) into links. Its own long-press menu for those
+     links clashed with the board's press-and-hold on tiles. The board's own
+     "Add to calendar" button in a tile's details does the useful part instead. -->
+<meta name="format-detection" content="date=no, telephone=no, address=no, email=no">
 <title>Topic Planning Board</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%23B8956A'/%3E%3Cpath d='M6 8h12M6 12h12M6 16h7' stroke='white' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E">
 
@@ -71,7 +76,8 @@
   --radius: 10px;
   --touch: 44px;          /* minimum touch target on iPad */
   --month-col: 8.5rem;    /* width of the sticky month column */
-  --group-col: 10.5rem;   /* minimum width of each group column */
+  --group-col: 8.5rem;    /* minimum width of each group column: 8 of them fit a 1,440 px screen,
+                             or a 1,600 px screen with the tray docked beside the board */
   --band-h: 3.25rem;      /* height of the category band header row */
   --sub-h: 2.4rem;        /* height of the club sub-header row */
 }
@@ -272,7 +278,7 @@ main { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 1
 .mcell .y { font-size: 14px; color: var(--muted); }
 .now-chip {
   align-self: flex-start; margin-top: 4px; font-size: 12px; font-weight: 700;
-  background: var(--bronze); color: var(--ink); border-radius: 6px; padding: 2px 8px;
+  background: var(--bronze); color: var(--ink); border-radius: 6px; padding: 2px 8px; white-space: nowrap;
 }
 .cell {
   border-bottom: 1px solid var(--line); border-left: 1px dashed #DDD6CB;
@@ -348,7 +354,7 @@ dialog::backdrop { background: rgba(28,27,25,.45); }
 .dlg-head h2 { margin: 0; font-size: 20px; flex: 1; }
 .dlg-body { padding: 6px 20px 16px; display: flex; flex-direction: column; gap: 14px; }
 .dlg-foot { padding: 14px 20px; border-top: 1px solid var(--line); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.dlg-foot .right { margin-left: auto; display: flex; gap: 8px; }
+.dlg-foot .right { margin-left: auto; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
 .field { display: flex; flex-direction: column; gap: 5px; font-size: 14px; font-weight: 700; color: var(--ink-2); }
 .field .help { font-weight: 400; color: var(--muted); font-size: 13px; }
 .field .error { font-weight: 700; color: var(--danger); font-size: 13px; }
@@ -406,11 +412,130 @@ dialog.sheet[open] { display: flex; }
 
 .loading { padding: 40px; text-align: center; color: var(--muted); font-size: 17px; }
 
+/* --- Workspace: the grid plus the topic tray (Stage 2) ----------------------
+   The tray sits beside the grid on wide screens (docked) and slides over the
+   right-hand side of the grid on narrower ones, so the grid keeps the full
+   width of an iPad. .workspace is position: relative so the sliding tray can
+   be placed against its right edge.                                          */
+.workspace { flex: 1; min-height: 0; display: flex; gap: 12px; position: relative; }
+.workspace > .grid-scroll { flex: 1; min-width: 0; }
+.tray {
+  width: 300px; flex-shrink: 0; display: flex; flex-direction: column;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 14px; min-height: 0;
+}
+.tray.overlay {
+  position: absolute; top: 0; right: 0; bottom: 0; z-index: 20; width: min(340px, 92%);
+  box-shadow: -12px 0 32px rgba(0,0,0,.18);
+}
+.tray-head { padding: 12px 14px 10px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px; }
+.tray-head .top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.tray-head h2 { margin: 0; font-size: 18px; }
+.tray-head .segmented button { padding: 0 10px; font-size: 14px; min-height: 34px; }
+.tray-list { flex: 1; overflow: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px; -webkit-overflow-scrolling: touch; }
+.tray-foot { padding: 10px; border-top: 1px solid var(--line); }
+.tray-foot .btn { width: 100%; }
+.tray-empty { color: var(--muted); font-size: 14px; padding: 8px 4px; }
+.tray-card {
+  text-align: left; width: 100%; background: var(--fill); border: 1px solid var(--line-c);
+  border-left: 6px solid var(--strong); border-radius: 10px; padding: 8px 10px;
+  display: flex; flex-direction: column; gap: 5px;
+}
+.tray-card .top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.tray-card .title { font-size: 15px; font-weight: 700; line-height: 1.25; }
+.tray-card .cat { font-size: 12px; font-weight: 700; color: var(--ink-c); }
+.tray-card .badges { display: flex; flex-wrap: wrap; gap: 4px; }
+.badge { font-size: 12px; font-weight: 700; border-radius: 6px; padding: 2px 7px; background: #FFFFFF; color: var(--muted); border: 1px dashed var(--line-strong); }
+.badge.placed { color: var(--ok); background: var(--ok-soft); border: 1px solid #A9D3B0; }
+
+/* --- The placing strip: what the selected tile or topic will do ----------- */
+.strip {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;
+  padding: 8px 10px 8px 14px; border-radius: 12px;
+  background: var(--bronze-soft); border: 1px solid var(--bronze);
+}
+.strip .text { flex: 1 1 260px; font-size: 15px; }
+.strip .text strong { font-weight: 700; }
+.strip .actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.strip .btn { min-height: 40px; padding: 0 12px; }
+
+/* --- Editing the grid --------------------------------------------------------
+   In Edit mode each empty cell holds a button covering the cell, so a tap or
+   a keyboard press can place a topic there. Lit cells are the valid places for
+   whatever is selected or being dragged.                                       */
+.cell-btn {
+  flex: 1; width: 100%; text-align: left; display: flex; align-items: flex-start;
+  border: 1px dashed transparent; border-radius: 10px; background: transparent; padding: 4px;
+  font-size: 13px; color: var(--muted-2);
+}
+.board.is-editing .cell-btn:hover { border-color: var(--line-strong); background: var(--surface-2); }
+.cell.lit { background: #FFF8EC; box-shadow: inset 0 0 0 2px var(--bronze); }
+.cell.lit .cell-btn { color: var(--bronze-deep); font-weight: 700; }
+.cell.lit.occupied { box-shadow: inset 0 0 0 2px #CDB48C; }
+.cell.is-cursor { box-shadow: inset 0 0 0 3px var(--ink); }
+.cell.drop-hover { background: var(--bronze-chip); box-shadow: inset 0 0 0 3px var(--bronze-deep); }
+.cell.drop-refused { box-shadow: inset 0 0 0 3px var(--danger); }
+.board.is-editing .tile, .tray.can-drag .tray-card {
+  /* Stop iPad Safari's long-press callout and text selection, which would
+     otherwise fight the press-and-hold that starts a drag. */
+  -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; cursor: grab;
+}
+.tray.drop-hover { box-shadow: inset 0 0 0 3px var(--bronze-deep); background: var(--bronze-soft); }
+.tile.is-selected, .tray-card.is-selected { outline: 3px solid var(--ink); outline-offset: 2px; }
+.tile.is-drag-source, .tray-card.is-drag-source { opacity: .35; }
+.drag-ghost {
+  position: fixed; left: 0; top: 0; z-index: 200; pointer-events: none;
+  width: 190px; transform-origin: 0 0; box-shadow: 0 12px 28px rgba(0,0,0,.28);
+  border-radius: 10px; opacity: .95;
+}
+.drag-ghost .tile, .drag-ghost.tray-card { min-height: 0; }
+body.is-dragging, body.is-dragging * { cursor: grabbing !important; }
+.ctx-menu {
+  position: fixed; z-index: 150; min-width: 200px; padding: 6px;
+  background: var(--surface); border: 1px solid var(--line-strong); border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(0,0,0,.2); display: flex; flex-direction: column;
+}
+.menu-item {
+  display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 12px;
+  border: 0; border-radius: 8px; background: transparent; text-align: left; font-size: 15px;
+}
+.menu-item:hover, .menu-item:focus-visible { background: var(--bronze-chip); outline: none; }
+.menu-item.danger { color: var(--danger); }
+.chip-invites { color: var(--ok); background: var(--ok-soft); border-color: #A9D3B0; display: inline-flex; align-items: center; gap: 3px; }
+.chip-invites .icon { width: 13px; height: 13px; }
+.test-banner { background: #5C4220; color: #FFFFFF; font-weight: 700; font-size: 14px; text-align: center; padding: 4px 12px; }
+.check-row { display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 700; min-height: var(--touch); cursor: pointer; }
+.check-row input { width: 22px; height: 22px; accent-color: var(--ok); }
+.sheet-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.sheet-actions .btn { min-height: 40px; padding: 0 12px; font-size: 14px; background: rgba(255,255,255,.85); }
+.danger-zone { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 6px; border-top: 1px solid var(--line); }
+
+/* --- Fit the board to the iPad's width (Nice to Have 1) ----------------------
+   iPad landscape is about 1,180 px wide. Up to 1,300 px the month column and the
+   group columns narrow (each group column may shrink to 7rem = 112 px), so all
+   eight groups fit without scrolling sideways. Tiles get a little tighter.
+   Below 1,000 px (iPad portrait) eight columns cannot fit, so sideways scrolling
+   remains, or the Windows / iPad filter shows four columns that do fit.        */
+@media (max-width: 1300px) {
+  :root { --month-col: 5.6rem; --group-col: 7rem; }
+  .bar1, .bar2 { padding-left: 12px; padding-right: 12px; }
+  main { padding: 10px 10px 12px; }
+  .mcell { padding: 8px 8px; }
+  .mcell .m { font-size: 16px; }
+  .now-chip { font-size: 11px; padding: 1px 5px; }
+  .cell { padding: 5px; min-height: 104px; }
+  .tile { padding: 6px 7px; min-height: 88px; gap: 4px; }
+  .tile .when { font-size: 12px; }
+  .tile .title { font-size: 14px; }
+  .pres { font-size: 11px; padding: 1px 5px; }
+  .band { font-size: 15px; padding: 6px 8px; }
+  .sub { padding: 0 8px; }
+  .field-inline .label-text { display: none; }
+}
+
 /* --- Narrower screens (iPad portrait and below) ---------------------------- */
 @media (max-width: 900px) {
   .brand-sub { display: none; }
-  .bar1, .bar2, main { padding-left: 12px; padding-right: 12px; }
-  :root { --month-col: 7rem; --group-col: 9.5rem; }
+  :root { --month-col: 5rem; --group-col: 8rem; }
 }
 @media (max-width: 700px) {
   dialog.sheet { width: 100vw; border-radius: 0; }
@@ -428,6 +553,7 @@ dialog.sheet[open] { display: flex; }
      data file can never be run as code.
      ===================================================================== -->
 <div class="app">
+  <div class="test-banner" id="testBanner" hidden>TEST COPY — changes here do not affect the real plan</div>
 
   <!-- Header bar 1: identity, views, save status, editing -->
   <header class="bar1">
@@ -465,21 +591,32 @@ dialog.sheet[open] { display: flex; }
       <button type="button" class="btn btn-icon" id="rangeLater" aria-label="Later months"><span class="icon" data-icon="right"></span></button>
       <button type="button" class="btn" id="thisMonthBtn" style="margin-left:6px">This month</button>
     </div>
-    <label class="field-inline">Columns
-      <select class="input" id="groupBySelect">
+    <label class="field-inline"><span class="label-text">Columns</span>
+      <select class="input" id="groupBySelect" aria-label="Columns">
         <option value="category">By category</option>
         <option value="club">By club</option>
       </select>
     </label>
+    <!-- Editing tools: shown only while the Edit switch is on -->
+    <div class="edit-tools" id="editTools" hidden style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
+      <button type="button" class="btn" id="undoBtn" disabled><span class="icon" data-icon="undo"></span>Undo</button>
+      <button type="button" class="btn" id="trayBtn" aria-expanded="false" aria-controls="tray"><span class="icon" data-icon="tray"></span>Topics</button>
+      <button type="button" class="btn btn-dark" id="newTopicBtn"><span class="icon" data-icon="plus"></span>New topic</button>
+    </div>
   </div>
 
   <main>
     <div class="messages" id="messages" aria-live="polite"></div>
+    <!-- The placing strip: says what the selected tile or topic will do next -->
+    <div class="strip" id="strip" role="region" aria-label="Selected item" aria-live="polite" hidden></div>
 
-    <!-- Board view -->
-    <div class="grid-scroll" id="boardView">
-      <div class="loading" id="loading">Loading the plan…</div>
-      <div class="board" id="board" role="table" aria-label="Topic plan by month and group"></div>
+    <!-- Board view: the grid plus the topic tray -->
+    <div class="workspace" id="boardView">
+      <div class="grid-scroll" id="gridScroll">
+        <div class="loading" id="loading">Loading the plan…</div>
+        <div class="board" id="board" role="table" aria-label="Topic plan by month and group"></div>
+      </div>
+      <aside class="tray" id="tray" aria-label="Topic tray" hidden></aside>
     </div>
 
     <!-- PDFs view (built in Stage 4) -->
@@ -545,8 +682,44 @@ dialog.sheet[open] { display: flex; }
   </form>
 </dialog>
 
+<!-- New topic dialog -->
+<dialog id="topicDialog" aria-labelledby="topicDialogTitle">
+  <form method="dialog">
+    <div class="dlg-head">
+      <h2 id="topicDialogTitle">New topic</h2>
+      <button type="submit" value="cancel" class="btn btn-quiet btn-icon" aria-label="Close" formnovalidate><span class="icon" data-icon="close"></span></button>
+    </div>
+    <div class="dlg-body">
+      <label class="field">Title
+        <input class="input" id="ntTitle" maxlength="120" autocomplete="off">
+        <span class="error" id="ntTitleError"></span>
+      </label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <label class="field">Category<select class="input" id="ntCategory"></select></label>
+        <label class="field">Presenter<select class="input" id="ntPresenter"></select></label>
+      </div>
+      <label class="check-row" id="ntPlaceRow" hidden><input type="checkbox" id="ntPlace" checked><span id="ntPlaceText"></span></label>
+      <p class="note" style="margin:0">Notes links, slides and the members’ briefing can be added afterwards in the topic’s details.</p>
+    </div>
+    <div class="dlg-foot"><div class="right">
+      <button type="submit" value="cancel" class="btn" formnovalidate>Cancel</button>
+      <button type="button" class="btn btn-dark" id="ntCreate">Create topic</button>
+    </div></div>
+  </form>
+</dialog>
+
+<!-- A question with a choice of buttons (swap, replace, delete …), built by ask() -->
+<dialog id="askDialog" aria-labelledby="askTitle">
+  <div class="dlg-head"><h2 id="askTitle"></h2></div>
+  <div class="dlg-body"><p id="askText" style="margin:0"></p></div>
+  <div class="dlg-foot"><div class="right" id="askButtons"></div></div>
+</dialog>
+
 <!-- Topic details panel (contents built by renderDetails) -->
 <dialog class="sheet" id="detailsSheet" aria-labelledby="detailsTitle"></dialog>
+
+<!-- Right-click menu for tiles and tray topics (built by openMenu) -->
+<div class="ctx-menu" id="ctxMenu" role="menu" hidden></div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
@@ -561,10 +734,20 @@ dialog.sheet[open] { display: flex; }
    GitHub's API to this repository. */
 const REPO = {
   owner: 'FornhamCC',
-  name: 'planner',
+  name: repoNameFromAddress(),
   branch: 'main',
   dataPath: 'data/plan.json'
 };
+/* The live board is the 'planner' repository. A test copy can live in a second
+   repository whose name starts 'planner-' (for example 'planner-test'): the same
+   index.html then saves to that copy, because GitHub Pages serves each
+   repository under its own name: fornhamcc.github.io/planner-test/.
+   Anything else (such as testing on this computer) uses 'planner'. */
+function repoNameFromAddress() {
+  const first = location.pathname.split('/')[1] || '';
+  return /^planner(-[a-z0-9-]+)?$/i.test(first) ? first : 'planner';
+}
+const IS_TEST_COPY = REPO.name.toLowerCase() !== 'planner';
 const GITHUB_API = 'https://api.github.com';
 const GUIDE_URL = 'https://github.com/FornhamCC/planner/blob/main/docs/setup-guide.md';
 /* GitHub's page listing your fine-grained keys; "Regenerate token" is there. */
@@ -614,8 +797,31 @@ const ICONS = {
   clip: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5l-8.6 8.6a5.5 5.5 0 0 1-7.8-7.8l8.6-8.6a3.7 3.7 0 0 1 5.2 5.2l-8.6 8.6a1.8 1.8 0 0 1-2.6-2.6l7.9-7.9"/></svg>',
   doc: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>',
   open: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>',
-  chevron: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>'
+  chevron: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>',
+  undo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>',
+  plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  tray: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M15 4v16M7 9h4M7 13h4"/></svg>',
+  copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>',
+  paste: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 11h6M9 15h4"/></svg>',
+  remove: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h11M10 8l4 4-4 4M19 4v16"/></svg>',
+  trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
+  edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13 7l4 4"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>'
 };
+
+/* Dragging (section 8). On a mouse a drag starts once the pointer has moved a
+   few pixels; on a finger or pencil it starts after a press-and-hold, so an
+   ordinary swipe still scrolls the board. */
+const DRAG = {
+  mouseThreshold: 6,     // px moved with the button down before a mouse drag starts
+  holdDelay: 300,        // ms a finger must rest on a tile before it lifts
+  holdSlop: 10,          // px a finger may wander during the hold; more means "scroll"
+  edgeZone: 60,          // px from the board's edge where dragging scrolls the board
+  edgeSpeed: 18          // px scrolled per animation frame at the very edge
+};
+/* Width at which the topic tray sits beside the board instead of sliding over it. */
+const TRAY_DOCK_WIDTH = 1600;
+const UNDO_LIMIT = 50;
 
 /* Used only if the data file has no settings at all (a brand-new repository). */
 const DEFAULT_SETTINGS = {
@@ -854,6 +1060,85 @@ const DateEngine = (() => {
 
 
 /* =====================================================================
+   4b. CALENDAR FILE (Nice to Have 4)
+   Builds the text of an iCalendar (.ics) file for one session: the format
+   Apple Calendar, Outlook and Google Calendar all read (RFC 5545).
+   Pure: no page, no clock (the time stamp is passed in).
+   - Times are written as UK local times with TZID=Europe/London, and the
+     file carries a VTIMEZONE block describing British Summer Time (last
+     Sunday of March to last Sunday of October), so a 12:30 meeting stays at
+     12:30 in either season and on a device set to another time zone.
+   - Lines end with CRLF and are folded at 75 bytes, as the standard requires;
+     commas, semicolons, backslashes and new lines in text are escaped.
+   ===================================================================== */
+/* CALENDAR-FILE-START */
+const CalendarFile = (() => {
+  const TIMEZONE = [
+    'BEGIN:VTIMEZONE', 'TZID:Europe/London',
+    'BEGIN:DAYLIGHT', 'TZOFFSETFROM:+0000', 'TZOFFSETTO:+0100', 'TZNAME:BST',
+    'DTSTART:19700329T010000', 'RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU', 'END:DAYLIGHT',
+    'BEGIN:STANDARD', 'TZOFFSETFROM:+0100', 'TZOFFSETTO:+0000', 'TZNAME:GMT',
+    'DTSTART:19701025T020000', 'RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU', 'END:STANDARD',
+    'END:VTIMEZONE'
+  ];
+
+  /** Escape text for a TEXT value: \ ; , and new lines (RFC 5545 section 3.3.11). */
+  function escapeText(text) {
+    return String(text || '').replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+  }
+
+  /**
+   * Fold one line into pieces of at most 75 bytes (UTF-8), each continuation
+   * starting with a space. Counting bytes, not characters, matters for text
+   * such as "café" or curly quotes; a character is never split in two.
+   */
+  function fold(line) {
+    const enc = new TextEncoder();
+    const out = [];
+    let current = '', bytes = 0;
+    for (const ch of line) {                       // for…of walks whole characters
+      const n = enc.encode(ch).length;
+      const limit = out.length ? 74 : 75;          // continuation lines lose a byte to the leading space
+      if (bytes + n > limit) { out.push(current); current = ''; bytes = 0; }
+      current += ch; bytes += n;
+    }
+    out.push(current);
+    return out.map((part, i) => (i ? ' ' : '') + part).join('\r\n');
+  }
+
+  /** '2027-01-25' + '12:30' -> '20270125T123000' (local time, no Z). */
+  function localStamp(date, time) { return date.replace(/-/g, '') + 'T' + time.replace(':', '') + '00'; }
+
+  /** A Date -> '20261017T103000Z' in UTC, for DTSTAMP. */
+  function utcStamp(d) { return d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, ''); }
+
+  /**
+   * The whole file. event: { uid, date 'YYYY-MM-DD', start 'HH:MM', end 'HH:MM',
+   * title, description, stamp (a Date) }.
+   */
+  function build(event) {
+    const lines = [
+      'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//FornhamCC//Topic Planning Board//EN',
+      'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
+      ...TIMEZONE,
+      'BEGIN:VEVENT',
+      'UID:' + event.uid,
+      'DTSTAMP:' + utcStamp(event.stamp),
+      'DTSTART;TZID=Europe/London:' + localStamp(event.date, event.start),
+      'DTEND;TZID=Europe/London:' + localStamp(event.date, event.end),
+      'SUMMARY:' + escapeText(event.title),
+      event.description ? 'DESCRIPTION:' + escapeText(event.description) : null,
+      'END:VEVENT', 'END:VCALENDAR'
+    ].filter(Boolean);
+    return lines.map(fold).join('\r\n') + '\r\n';
+  }
+
+  return { build, escapeText, fold };
+})();
+/* CALENDAR-FILE-END */
+
+
+/* =====================================================================
    5. DATA LAYER
    Reading the plan, the access key, the save queue with conflict retry,
    and checking incoming data. Every change is an "operation" with a
@@ -1018,7 +1303,7 @@ async function putPlanToApi(data, sha, message) {
     throw new Error('GitHub refused the save: ' + (body.message || 'invalid request') + '.');
   }
   if (res.status === 403 || res.status === 404) {
-    throw new KeyError('This key is not allowed to save to the planner repository. Check it has “Contents: read and write” for FornhamCC/planner.');
+    throw new KeyError('This key is not allowed to save to the ' + REPO.name + ' repository. Check it has “Contents: read and write” for ' + REPO.owner + '/' + REPO.name + '.');
   }
   if (!res.ok) throw new Error('GitHub could not save (' + res.status + ').');
   const body = await res.json();
@@ -1041,7 +1326,7 @@ async function verifyKey() {
   const expiryHeader = userRes.headers.get('github-authentication-token-expiration');
   const repoRes = await github('/repos/' + REPO.owner + '/' + REPO.name);
   if (repoRes.status === 404) {
-    throw new KeyError('This key cannot see the ' + REPO.owner + '/' + REPO.name + ' repository. When making the key, choose FornhamCC as the owner and the planner repository.');
+    throw new KeyError('This key cannot see the ' + REPO.owner + '/' + REPO.name + ' repository. When making the key, choose FornhamCC as the owner and the ' + REPO.name + ' repository.');
   }
   if (!repoRes.ok) throw new Error('GitHub could not check the repository (' + repoRes.status + ').');
   const repo = await repoRes.json();
@@ -1177,14 +1462,20 @@ async function runSave() {
   }
 }
 
-/** Remove an operation that clashed with someone else's change and explain. */
+/**
+ * Remove an operation that clashed with someone else's change, and explain.
+ * Operations made by one action (a move is two: take the tile out of one cell,
+ * put it in another) share a 'group'. The whole group is dropped together, so a
+ * move can never be left half done. Its undo entry goes too.
+ */
 function dropConflict(op) {
-  const i = state.pending.indexOf(op);
-  if (i >= 0) state.pending.splice(i, 1);
+  const dropped = op.group ? state.pending.filter(o => o.group === op.group) : [op];
+  state.pending = state.pending.filter(o => !dropped.includes(o));
+  if (op.group) state.undo = state.undo.filter(u => u.group !== op.group);
   const what = op.kind === 'topic'
     ? 'the topic “' + ((op.after || op.before || {}).title || 'untitled') + '”'
     : 'the ' + describeSession(op.id) + ' session';
-  addMessage('warn', 'Your change to ' + what + ' was not saved, because it was changed on another device first. ' +
+  addMessage('warn', 'Your change (' + op.label + ') was not saved, because ' + what + ' was changed on another device first. ' +
     'The board now shows the newer version; please make your change again if it is still needed.');
   rebuildLocalPlan();
   setSaveStatus(state.pending.length ? 'pending' : 'saved');
@@ -1220,7 +1511,17 @@ const state = {
   groupBy: 'category',        // 'category' or 'club'
   range: { from: null, to: null },
   lastLoaded: null,           // when the plan was last read
-  details: null               // the open details panel: { key, topicBefore, sessionBefore }
+  details: null,              // the open details panel: { key, topicId, topicBefore, sessionBefore, editing }
+  // --- Stage 2: editing the board ---
+  undo: [],                   // undo entries, newest last: { group, label, ops }
+  pick: null,                 // what is selected: { kind: 'tile', key } or { kind: 'topic', topicId, from: 'tray' | 'copy' }
+  clipboard: null,            // id of the copied topic (kept in the page, not the system clipboard)
+  cursorKey: null,            // the empty cell last tapped, where Paste and New topic act
+  prompt: null,               // a pairing suggestion shown in the strip: { text, button, run }
+  trayOpen: true,             // the tray is open when docked beside the board (remembered)
+  trayOverlay: false,         // the tray is open over the board on narrower screens (not remembered)
+  trayFilter: 'upcoming',     // 'needs', 'upcoming' or 'all'
+  drag: null                  // the drag in progress (see section 8)
 };
 
 /** Today on this device, worked out fresh each time it is needed. */
@@ -1232,10 +1533,14 @@ function loadPrefs() {
     const p = JSON.parse(storeGet(STORE.prefs) || '{}');
     if (['all', 'Windows', 'iPad'].includes(p.platform)) state.platform = p.platform;
     if (['category', 'club'].includes(p.groupBy)) state.groupBy = p.groupBy;
+    if (['needs', 'upcoming', 'all'].includes(p.trayFilter)) state.trayFilter = p.trayFilter;
+    if (typeof p.trayOpen === 'boolean') state.trayOpen = p.trayOpen;
   } catch (e) { /* ignore */ }
 }
 function savePrefs() {
-  storeSet(STORE.prefs, JSON.stringify({ platform: state.platform, groupBy: state.groupBy }));
+  storeSet(STORE.prefs, JSON.stringify({
+    platform: state.platform, groupBy: state.groupBy, trayFilter: state.trayFilter, trayOpen: state.trayOpen
+  }));
 }
 
 /** True when this device may edit right now. */
@@ -1342,10 +1647,16 @@ function colourVars(cat) {
 /** Redraw everything currently shown. */
 function render() {
   if (!state.plan) return;
+  // Redrawing would remove the tile under a finger mid-drag (and with it the
+  // touch events), so while dragging the redraw waits until the drop.
+  if (state.drag && state.drag.active) { state.drag.renderLater = true; return; }
+  tidySelection();
   renderHeader();
-  if (state.view === 'board') renderBoard();
+  if (state.view === 'board') { renderBoard(); renderTray(); renderStrip(); }
   if (state.view === 'settings') renderSettings();
-  if (state.details && document.getElementById('detailsSheet').open) renderDetails();
+  // Redraw an open details panel only when it is read-only: an editable form is
+  // left alone so nothing typed is lost; saving compares against what it opened with.
+  if (state.details && document.getElementById('detailsSheet').open && !(state.details.editing && canEdit())) renderDetails();
 }
 
 /** Header bars: title, view tabs, role, unlock button or Edit switch, filters, range. */
@@ -1361,6 +1672,14 @@ function renderHeader() {
   });
   document.getElementById('bar2').hidden = state.view !== 'board';
   document.getElementById('boardView').hidden = state.view !== 'board';
+  // Editing tools (Undo, Topics, New topic) appear only while editing.
+  document.getElementById('editTools').hidden = !canEdit();
+  const undoBtn = document.getElementById('undoBtn');
+  const lastUndo = state.undo[state.undo.length - 1];
+  undoBtn.disabled = !lastUndo;
+  undoBtn.title = lastUndo ? 'Undo: ' + lastUndo.label + ' (Ctrl+Z)' : 'Nothing to undo';
+  document.getElementById('trayBtn').setAttribute('aria-expanded', String(trayShown()));
+  document.getElementById('testBanner').hidden = !IS_TEST_COPY;
   document.getElementById('pdfsView').hidden = state.view !== 'pdfs';
   document.getElementById('settingsView').hidden = state.view !== 'settings';
 
@@ -1416,6 +1735,7 @@ function renderBoard() {
   // Fixed month column, then one flexible column per group.
   board.style.gridTemplateColumns = 'var(--month-col) repeat(' + cols.length + ', minmax(var(--group-col), 1fr))';
   board.classList.toggle('is-editing', canEdit());
+  const targets = currentTargets();   // cells to light up for the selection or drag
 
   const parts = [];
   // Header row 1: the corner and the category (or club) bands, each spanning its columns.
@@ -1462,13 +1782,13 @@ function renderBoard() {
       m = end;
       continue;
     }
-    parts.push(renderMonthRow(key, cols, now));
+    parts.push(renderMonthRow(key, cols, now, targets));
   }
   board.replaceChildren(...parts);
 }
 
 /** One month's row: the month cell plus a cell per visible group. */
-function renderMonthRow(key, cols, now) {
+function renderMonthRow(key, cols, now, targets) {
   const isCurrent = key === now.month;
   const row = el('div', {
     class: 'row' + (isCurrent ? ' is-current' : '') + (key < now.month ? ' is-past' : ''),
@@ -1484,22 +1804,30 @@ function renderMonthRow(key, cols, now) {
     const sKey = sessionKey(key, col.club.code, col.cat.code);
     const session = state.plan.sessions[sKey];
     const cell = el('div', {
-      class: 'cell' + (first ? ' first' : ''),
+      class: 'cell' + (first ? ' first' : '') +
+        (targets.has(sKey) ? ' lit' + (session ? ' occupied' : '') : '') +
+        (state.cursorKey === sKey && !session ? ' is-cursor' : ''),
       attrs: { role: 'cell', 'data-key': sKey }
     });
     if (session) {
       cell.append(renderTile(sKey, session, col));
     } else {
       const pattern = DateEngine.sessionDate(settings(), key, col.club.code, col.cat.code);
-      if (pattern) {
-        cell.append(el('div', { class: 'hint' + (pattern.closure ? ' closed' : '') },
-          pattern.closure
+      const hint = pattern
+        ? (pattern.closure
             ? [el('span', { class: 'nowrap', text: DateEngine.formatDayDate(pattern.date) }), ' · ', pattern.closure]
-            : whenParts(pattern.date, pattern.start, pattern.end)));
-      }
-      if (canEdit()) {
-        cell.classList.add('editable-empty');
-        cell.addEventListener('click', () => toast('Placing new topics arrives in the next stage of the build.'));
+            : whenParts(pattern.date, pattern.start, pattern.end))
+        : null;
+      if (canEdit() && pattern) {
+        // In Edit mode the empty cell is a button: tap to place the selected
+        // topic here, or (with nothing selected) to make or paste one here.
+        cell.append(el('button', {
+          type: 'button', class: 'cell-btn' + (pattern.closure ? ' hint closed' : ''),
+          attrs: { 'aria-label': (targets.has(sKey) ? 'Place here: ' : 'Empty: ') + groupName(col.club.code, col.cat.code) + ', ' + DateEngine.formatDayDate(pattern.date, true) },
+          on: { click: () => handleCellTap(sKey) }
+        }, el('span', {}, hint)));
+      } else if (hint) {
+        cell.append(el('div', { class: 'hint' + (pattern.closure ? ' closed' : '') }, hint));
       }
     }
     row.append(cell);
@@ -1515,19 +1843,29 @@ function whenParts(date, start, end) {
   ];
 }
 
-/** A placed session's tile. Its colour comes from the topic's category (club events are bronze). */
+/**
+ * A placed session's tile. Its colour comes from the topic's category (club
+ * events are bronze). In View mode a tap opens the details; in Edit mode a tap
+ * selects the tile (a second tap opens the details) and a drag moves it.
+ */
 function renderTile(sKey, session, col) {
   const topic = state.plan.topics[session.topicId] || { title: '(missing topic)', category: col.cat.code };
   const cat = categoryOf(topic.category) || col.cat;
   const cancelled = session.status === 'cancelled';
+  const selected = state.pick && state.pick.kind === 'tile' && state.pick.key === sKey;
+  const dragging = state.drag && state.drag.active && state.drag.source.kind === 'tile' && state.drag.source.key === sKey;
   const whenText = DateEngine.formatDayDate(session.date) + ' · ' +
     DateEngine.formatTime(session.start) + '–' + DateEngine.formatTime(session.end);
   return el('button', {
     type: 'button',
-    class: 'tile' + (cancelled ? ' cancelled' : ''),
+    class: 'tile' + (cancelled ? ' cancelled' : '') + (selected ? ' is-selected' : '') + (dragging ? ' is-drag-source' : ''),
     vars: colourVars(cat),
-    attrs: { 'aria-label': topic.title + ', ' + whenText + (cancelled ? ', cancelled' : '') + '. Open details.' },
-    on: { click: () => openDetails(sKey) }
+    attrs: {
+      'aria-label': topic.title + ', ' + whenText + (cancelled ? ', cancelled' : '') +
+        (selected ? '. Being moved.' : '. Open details.') + (canEdit() ? ' Right-click for more actions.' : ''),
+      'data-drag': canEdit() ? 'tile' : null
+    },
+    on: { click: () => handleTileTap(sKey) }
   },
   el('div', { class: 'when-line' },
     el('span', { class: 'when' + (session.moved ? ' moved' : '') }, whenParts(session.date, session.start, session.end)),
@@ -1537,8 +1875,199 @@ function renderTile(sKey, session, col) {
     topic.category === CLUB_EVENT ? el('span', { class: 'chip chip-event', text: cat.name }) : null,
     cancelled ? el('span', { class: 'chip chip-cancelled', text: 'Cancelled' }) : null,
     session.moved ? el('span', { class: 'chip chip-moved', text: 'Moved' }) : null,
+    // Bug B1: the tick belongs to this tile (one email group, one meeting), not the topic.
+    session.invitesSent ? el('span', { class: 'chip chip-invites', title: 'Invitations sent to ' + groupName(session.club, session.category) }, icon('check'), 'Invites sent') : null,
     topic.notesUrl ? el('span', { title: 'Tutorial notes linked' }, icon('clip')) : null,
     topic.briefing ? el('span', { title: 'Members’ briefing written' }, icon('doc')) : null));
+}
+
+/* --- The topic tray ------------------------------------------------------------ */
+
+/** True when the tray should sit beside the board rather than slide over it. */
+function trayDocked() { return window.innerWidth >= TRAY_DOCK_WIDTH; }
+/** True when the tray is on screen. Only editors see it. */
+function trayShown() { return canEdit() && (trayDocked() ? state.trayOpen : state.trayOverlay); }
+
+/**
+ * Where a topic is placed, per club: each club's sessions in date order.
+ * A topic is "past" when it has sessions and all of them are before today.
+ */
+function topicPlacement(topicId) {
+  const byClub = {};
+  settings().clubs.forEach(c => { byClub[c.code] = []; });
+  const all = sessionsOfTopic(topicId);
+  all.forEach(([k, s]) => { (byClub[s.club] = byClub[s.club] || []).push([k, s]); });
+  const todayDate = today().date;
+  return {
+    byClub,
+    count: all.length,
+    past: all.length > 0 && all.every(([, s]) => s.date < todayDate),
+    firstDate: all.length ? all[0][1].date : null
+  };
+}
+
+/** Which topics the tray lists, in order: category, then first date (unplaced last), then title. */
+function trayTopics() {
+  const order = CATEGORY_ORDER.concat([CLUB_EVENT]);
+  return Object.entries(state.plan.topics)
+    .map(([id, t]) => ({ id, t, p: topicPlacement(id) }))
+    .filter(({ t }) => {
+      if (state.platform === 'all' || t.category === CLUB_EVENT) return true;
+      const cat = categoryOf(t.category);
+      return cat && cat.platform === state.platform;
+    })
+    .filter(({ t, p }) => {
+      if (state.trayFilter === 'all') return true;
+      if (p.past) return false;                                  // past topics: only under "All"
+      if (state.trayFilter === 'needs') {
+        // Needs placing: a club event not placed anywhere, or a group topic missing from a club.
+        if (t.category === CLUB_EVENT) return p.count === 0;
+        return settings().clubs.some(c => !p.byClub[c.code].length);
+      }
+      return true;
+    })
+    .sort((a, b) =>
+      order.indexOf(a.t.category) - order.indexOf(b.t.category) ||
+      String(a.p.firstDate || '9999').localeCompare(String(b.p.firstDate || '9999')) ||
+      a.t.title.localeCompare(b.t.title));
+}
+
+/** Draw the tray: filters, a card per topic with where it is placed, New topic. */
+function renderTray() {
+  const tray = document.getElementById('tray');
+  const shown = trayShown();
+  tray.hidden = !shown;
+  if (!shown) return;
+  tray.classList.toggle('overlay', !trayDocked());
+  tray.classList.toggle('can-drag', canEdit());
+  const filters = [['needs', 'Needs placing'], ['upcoming', 'Upcoming'], ['all', 'All']];
+  const list = trayTopics();
+  const head = el('div', { class: 'tray-head' },
+    el('div', { class: 'top' },
+      el('h2', { text: 'Topics' }),
+      el('button', { type: 'button', class: 'btn btn-quiet btn-icon', attrs: { 'aria-label': 'Close the topic tray' }, on: { click: toggleTray } }, icon('close'))),
+    el('div', { class: 'segmented', attrs: { role: 'group', 'aria-label': 'Topics listed' } },
+      filters.map(([value, label]) => el('button', {
+        type: 'button', text: label, attrs: { 'aria-pressed': String(state.trayFilter === value) },
+        on: { click: () => { state.trayFilter = value; savePrefs(); renderTray(); } }
+      }))));
+  const body = el('div', { class: 'tray-list' });
+  if (!list.length) {
+    body.append(el('p', { class: 'tray-empty', text: state.trayFilter === 'needs'
+      ? 'Every topic is placed at both clubs. Press New topic to add another.'
+      : 'No topics yet. Press New topic to add one.' }));
+  }
+  list.forEach(({ id, t, p }) => body.append(renderTrayCard(id, t, p)));
+  const foot = el('div', { class: 'tray-foot' },
+    el('button', { type: 'button', class: 'btn btn-dark', on: { click: () => openNewTopic(null) } }, icon('plus'), 'New topic'));
+  tray.replaceChildren(head, body, foot);
+}
+
+/** One topic in the tray. Badges show, for each club, where it is placed. */
+function renderTrayCard(id, topic, placement) {
+  const cat = categoryOf(topic.category);
+  const selected = state.pick && state.pick.kind === 'topic' && state.pick.topicId === id;
+  const dragging = state.drag && state.drag.active && state.drag.source.kind === 'topic' && state.drag.source.topicId === id;
+  const todayDate = today().date;
+  const badges = settings().clubs.map(club => {
+    const list = placement.byClub[club.code] || [];
+    if (!list.length) return el('span', { class: 'badge', text: club.code + ' · not placed' });
+    // Show the next date from today (or the last one if all are past), plus how many more.
+    const next = list.find(([, s]) => s.date >= todayDate) || list[list.length - 1];
+    return el('span', { class: 'badge placed', text: club.code + ' ✓ ' + DateEngine.formatDayDate(next[1].date) + (list.length > 1 ? ' +' + (list.length - 1) : '') });
+  });
+  return el('button', {
+    type: 'button',
+    class: 'tray-card' + (selected ? ' is-selected' : '') + (dragging ? ' is-drag-source' : ''),
+    vars: colourVars(cat),
+    attrs: {
+      'data-drag': 'topic', 'data-topic': id, 'aria-pressed': String(!!selected),
+      'aria-label': topic.title + ', ' + (cat ? cat.name : '') + '. ' + (selected ? 'Selected. Press again for details.' : 'Select to place it on the board.')
+    },
+    on: { click: () => handleTrayTap(id) }
+  },
+  el('div', { class: 'top' },
+    el('span', { class: 'title', text: topic.title }),
+    topic.presenter ? el('span', { class: 'pres', text: topic.presenter, title: presenterName(topic.presenter) }) : null),
+  el('span', { class: 'cat', text: cat ? cat.name : '' }),
+  el('div', { class: 'badges' }, badges,
+    invitesBadge(id)));
+}
+
+/**
+ * Tray badge counting the topic's tiles whose invitations have gone out,
+ * e.g. "Invites 1 of 2". Nothing is shown until at least one tile is ticked;
+ * it turns green once every tile is ticked.
+ */
+function invitesBadge(topicId) {
+  const tiles = sessionsOfTopic(topicId).filter(([, s]) => s.status !== 'cancelled');
+  const sent = tiles.filter(([, s]) => s.invitesSent).length;
+  if (!sent) return null;
+  return el('span', { class: 'badge' + (sent === tiles.length ? ' placed' : ''), text: '✓ Invites ' + sent + ' of ' + tiles.length });
+}
+
+/* --- The placing strip ------------------------------------------------------------ */
+
+/** A button for the strip. */
+function stripButton(label, iconName, onClick, extraClass) {
+  return el('button', { type: 'button', class: 'btn ' + (extraClass || ''), on: { click: onClick } },
+    iconName ? icon(iconName) : null, label);
+}
+
+/**
+ * The strip above the board says what the current selection will do and offers
+ * the actions that go with it. A pairing suggestion takes priority over the rest.
+ */
+function renderStrip() {
+  const strip = document.getElementById('strip');
+  const parts = stripContent();
+  strip.hidden = !parts;
+  if (parts) strip.replaceChildren(el('div', { class: 'text' }, parts.text), el('div', { class: 'actions' }, parts.actions));
+}
+function stripContent() {
+  if (!canEdit() || state.view !== 'board') return null;
+  if (state.prompt) {
+    return {
+      text: state.prompt.text,
+      actions: [stripButton(state.prompt.button, null, runPrompt, 'btn-dark'), stripButton('Not now', null, () => { state.prompt = null; renderStrip(); })]
+    };
+  }
+  const pick = state.pick;
+  if (pick && pick.kind === 'tile') {
+    const session = state.plan.sessions[pick.key];
+    const topic = state.plan.topics[session.topicId] || {};
+    return {
+      text: ['Moving ', el('strong', { text: topic.title }), ' from ' + describeSession(pick.key) + '. Click or tap a lit cell to move it there.'],
+      actions: [stripButton('Cancel', null, clearPick)]
+    };
+  }
+  if (pick && pick.kind === 'topic') {
+    const topic = state.plan.topics[pick.topicId] || {};
+    const count = currentTargets().size;
+    const where = count ? ' Tap a lit cell to place it.' : ' There is no free cell for it in the months shown.';
+    return {
+      text: [pick.from === 'copy' ? 'Copied ' : '', el('strong', { text: topic.title }), '.' + where],
+      actions: [
+        stripButton('Details', 'edit', () => openTopicDetails(pick.topicId)),
+        stripButton('Cancel', null, clearPick)]
+    };
+  }
+  if (state.cursorKey && !state.plan.sessions[state.cursorKey]) {
+    const p = parseSessionKey(state.cursorKey);
+    const pattern = DateEngine.sessionDate(settings(), p.month, p.club, p.cat);
+    const clip = state.clipboard && state.plan.topics[state.clipboard];
+    const actions = [stripButton('New topic here', 'plus', () => openNewTopic(state.cursorKey), 'btn-dark')];
+    if (clip && topicFitsCell(state.clipboard, state.cursorKey)) {
+      actions.push(stripButton('Paste “' + clip.title + '”', 'paste', () => pasteInto(state.cursorKey)));
+    }
+    actions.push(stripButton('Close', null, clearPick));
+    return {
+      text: [el('strong', { text: groupName(p.club, p.cat) }), pattern ? ' — ' + DateEngine.formatDayDate(pattern.date, true) + ', ' +
+        DateEngine.formatTime(pattern.start) + '–' + DateEngine.formatTime(pattern.end) : ''],
+      actions
+    };
+  }
+  return null;
 }
 
 /** Settings page: editing access now; club, pattern and presenter editing come in Stage 3. */
@@ -1610,10 +2139,23 @@ function openDetails(sKey) {
   // against these, so a change made elsewhere meanwhile is never overwritten.
   state.details = {
     key: sKey,
+    topicId: session.topicId,
     sessionBefore: clone(session),
     topicBefore: clone(state.plan.topics[session.topicId] || null),
     editing: canEdit()
   };
+  showDetailsSheet();
+}
+
+/** Open the details of a topic from the tray (it may not be placed anywhere). */
+function openTopicDetails(topicId) {
+  const topic = state.plan.topics[topicId];
+  if (!topic) return;
+  state.details = { key: null, topicId, sessionBefore: null, topicBefore: clone(topic), editing: canEdit() };
+  showDetailsSheet();
+}
+
+function showDetailsSheet() {
   renderDetails();
   const sheet = document.getElementById('detailsSheet');
   if (!sheet.open) sheet.showModal(); // showModal: blocks the board behind and lets Escape close it
@@ -1623,21 +2165,34 @@ function closeDetails() {
   document.getElementById('detailsSheet').close();
 }
 
-/** Build the details panel, read-only or editable. */
+/**
+ * Build the details panel, read-only or editable. With d.key it shows one placed
+ * session and its topic; without, just the topic (opened from the tray).
+ */
 function renderDetails() {
   const d = state.details;
   const sheet = document.getElementById('detailsSheet');
-  const session = state.plan.sessions[d.key];
-  if (!session) { closeDetails(); return; }
-  const topic = state.plan.topics[session.topicId] || { title: '', category: session.category };
-  const cat = categoryOf(topic.category) || categoryOf(session.category);
-  const club = clubOf(session.club);
+  const session = d.key ? state.plan.sessions[d.key] : null;
+  const topic = state.plan.topics[d.topicId];
+  if ((d.key && !session) || !topic) { closeDetails(); return; }
+  const cat = categoryOf(topic.category) || categoryOf(session && session.category);
+  const club = session ? clubOf(session.club) : null;
   const editing = d.editing && canEdit();
 
+  // In Edit mode the heading carries the tile's actions, so they are in view as
+  // soon as the panel opens (on the iPad this is how to move, copy or remove).
+  // They close the panel first; unsaved edits in it are dropped, so save first.
+  const actions = editing ? el('div', { class: 'sheet-actions' },
+    session
+      ? el('button', { type: 'button', class: 'btn', on: { click: () => startMove(d.key) } }, icon('remove'), 'Move to…')
+      : el('button', { type: 'button', class: 'btn', on: { click: () => startPlace(d.topicId) } }, icon('plus'), 'Place on board…'),
+    el('button', { type: 'button', class: 'btn', on: { click: () => { closeDetails(); copyTopic(d.topicId); } } }, icon('copy'), 'Copy'),
+    session ? el('button', { type: 'button', class: 'btn', on: { click: () => removeSession(d.key) } }, icon('trash'), 'Remove from board') : null) : null;
   const head = el('div', { class: 'sheet-head', vars: colourVars(cat) },
     el('div', { class: 'top' },
       el('span', { class: 'cat-chip', text: cat.name }),
       el('button', { type: 'button', class: 'btn btn-quiet btn-icon', attrs: { 'aria-label': 'Close' }, on: { click: closeDetails } }, icon('close'))),
+    actions,
     editing
       ? el('label', { class: 'field', attrs: { style: 'color:var(--ink-c)' } }, 'Topic title',
           el('input', { class: 'input', id: 'fTitle', value: topic.title, maxLength: LIMITS.title, attrs: { style: 'font-size:20px;font-weight:700', required: true } }),
@@ -1645,13 +2200,17 @@ function renderDetails() {
       : el('h2', { class: 'sheet-title', id: 'detailsTitle', text: topic.title }));
 
   const body = el('div', { class: 'sheet-body' });
-  const others = sessionsOfTopic(session.topicId).filter(([k]) => k !== d.key);
+  const placed = sessionsOfTopic(d.topicId);
+  const others = placed.filter(([k]) => k !== d.key);
 
   if (editing) {
-    // Category: the column's own category or Club event. A topic placed in columns of
-    // different categories (such as the AGM in both Windows columns) must stay a club event.
-    const placedCats = new Set(sessionsOfTopic(session.topicId).map(([, s]) => s.category));
-    const catOptions = placedCats.size > 1 ? [CLUB_EVENT] : [session.category, CLUB_EVENT];
+    // Category: a topic placed in columns of one category may be that category or
+    // a club event. Placed in columns of different categories (such as the AGM in
+    // both Windows columns) it must stay a club event. Unplaced: any category.
+    const placedCats = new Set(placed.map(([, s]) => s.category));
+    const catOptions = placedCats.size > 1 ? [CLUB_EVENT]
+      : placedCats.size === 1 ? [[...placedCats][0], CLUB_EVENT]
+      : CATEGORY_ORDER.concat([CLUB_EVENT]);
     const catSelect = el('select', { class: 'input', id: 'fCategory', disabled: catOptions.length === 1 },
       catOptions.map(code => el('option', { value: code, text: categoryOf(code).name })));
     catSelect.value = topic.category;
@@ -1662,30 +2221,14 @@ function renderDetails() {
       active.map(p => el('option', { value: p.code, text: p.code + ' — ' + p.name })));
     presSelect.value = topic.presenter || '';
 
-    const dim = DateEngine.daysInMonth(DateEngine.parseMonth(session.month).year, DateEngine.parseMonth(session.month).month);
     appendAll(body,
       el('div', { attrs: { style: 'display:grid;grid-template-columns:1fr 1fr;gap:12px' } },
         el('label', { class: 'field' }, 'Category', catSelect,
           catOptions.length === 1 ? el('span', { class: 'help', text: 'Placed in more than one kind of group, so it stays a club event.' }) : null),
         el('label', { class: 'field' }, 'Presenter', presSelect)),
-      el('section', { class: 'sheet-section' },
-        el('div', { attrs: { style: 'display:flex;align-items:baseline;justify-content:space-between;gap:8px' } },
-          el('h3', { text: 'This session' }),
-          el('button', { type: 'button', class: 'btn btn-quiet', attrs: { style: 'min-height:36px;color:var(--bronze-ink);text-decoration:underline' }, on: { click: resetToPattern } }, 'Reset to meeting pattern')),
-        el('div', { class: 'session-box' },
-          el('div', { class: 'top' },
-            el('strong', { text: groupName(session.club, session.category) }),
-            el('select', { class: 'input', id: 'fStatus', attrs: { 'aria-label': 'Status', style: 'min-height:36px' } },
-              el('option', { value: 'planned', text: 'Planned' }),
-              el('option', { value: 'cancelled', text: 'Cancelled' }))),
-          el('div', { class: 'row-fields' },
-            el('label', { class: 'field' }, 'Date',
-              el('input', { class: 'input', type: 'date', id: 'fDate', value: session.date,
-                min: session.month + '-01', max: session.month + '-' + String(dim).padStart(2, '0') })),
-            el('label', { class: 'field' }, 'Start', el('input', { class: 'input', type: 'time', id: 'fStart', value: session.start })),
-            el('label', { class: 'field' }, 'End', el('input', { class: 'input', type: 'time', id: 'fEnd', value: session.end }))),
-          el('span', { class: 'error', id: 'eSession' }))),
-      others.length ? el('p', { class: 'also' }, 'Also placed at: ', alsoLinks(others)) : null,
+      session ? renderSessionEditor(session) : null,
+      others.length ? el('p', { class: 'also' }, session ? 'Also placed at: ' : 'Placed at: ', alsoLinks(others))
+        : (!session ? el('p', { class: 'also', text: 'Not placed on the board yet.' }) : null),
       el('section', { class: 'sheet-section' },
         el('h3', { text: 'Tutorial materials' }),
         el('label', { class: 'field' }, 'Tutorial notes (OneDrive link)',
@@ -1699,22 +2242,26 @@ function renderDetails() {
         el('summary', {}, 'Members’ briefing', icon('chevron')),
         el('div', { class: 'inner' },
           el('label', { class: 'visually-hidden', htmlFor: 'fBriefing', text: 'Briefing text' }),
-          el('textarea', { class: 'input', id: 'fBriefing', rows: 7, maxLength: LIMITS.briefing, value: topic.briefing || '' }))));
-    body.querySelector('#fStatus').value = session.status || 'planned';
+          el('textarea', { class: 'input', id: 'fBriefing', rows: 7, maxLength: LIMITS.briefing, value: topic.briefing || '' }))),
+      // Delete stays at the foot, away from the everyday actions in the heading.
+      el('div', { class: 'danger-zone' },
+        el('button', { type: 'button', class: 'btn btn-danger-text', on: { click: () => deleteTopic(d.topicId) } }, icon('trash'), 'Delete topic')));
+    if (session) body.querySelector('#fStatus').value = session.status || 'planned';
   } else {
-    const when = DateEngine.formatDayDate(session.date, true) + ', ' +
-      DateEngine.formatTime(session.start) + '–' + DateEngine.formatTime(session.end);
     appendAll(body,
-      el('section', { class: 'sheet-section' },
+      session ? el('section', { class: 'sheet-section' },
         el('div', { class: 'session-box' },
           el('div', { class: 'top' },
             el('strong', { text: club ? club.name : session.club }),
             el('span', { class: 'status-chip' + (session.status === 'cancelled' ? ' cancelled' : ''), text: session.status === 'cancelled' ? 'Cancelled' : 'Planned' })),
           el('div', { text: groupName(session.club, session.category) }),
-          el('div', { attrs: { style: 'font-size:18px;font-weight:700' }, text: when }),
-          session.moved ? el('span', { class: 'chip chip-moved', attrs: { style: 'align-self:flex-start' }, text: 'Moved from the usual date or time' }) : null)),
+          el('div', { attrs: { style: 'font-size:18px;font-weight:700' }, text: DateEngine.formatDayDate(session.date, true) + ', ' +
+            DateEngine.formatTime(session.start) + '–' + DateEngine.formatTime(session.end) }),
+          session.moved ? el('span', { class: 'chip chip-moved', attrs: { style: 'align-self:flex-start' }, text: 'Moved from the usual date or time' }) : null,
+          session.invitesSent ? el('span', { class: 'chip chip-invites', attrs: { style: 'align-self:flex-start;font-size:14px;padding:3px 8px' } }, icon('check'), 'Invitations sent to this group') : null,
+          calendarButton(session))) : null,
       topic.presenter ? el('p', { attrs: { style: 'margin:0' } }, 'Presenter: ', el('strong', { text: presenterName(topic.presenter) })) : null,
-      others.length ? el('p', { class: 'also' }, 'Also at: ', alsoLinks(others)) : null,
+      others.length ? el('p', { class: 'also' }, session ? 'Also at: ' : 'At: ', alsoLinks(others)) : null,
       (topic.notesUrl || topic.slidesUrl) ? el('section', { class: 'sheet-section' },
         el('h3', { text: 'Tutorial materials' }),
         el('div', { class: 'actions', attrs: { style: 'display:flex;gap:8px;flex-wrap:wrap' } },
@@ -1731,6 +2278,79 @@ function renderDetails() {
          el('button', { type: 'button', class: 'btn btn-dark', id: 'detailsSave', on: { click: saveDetails } }, 'Save')]
       : el('button', { type: 'button', class: 'btn', on: { click: closeDetails } }, 'Close')));
   sheet.replaceChildren(head, body, foot);
+}
+
+/** The "This session" box: status, date and times of one placed session. */
+function renderSessionEditor(session) {
+  const p = DateEngine.parseMonth(session.month);
+  const dim = DateEngine.daysInMonth(p.year, p.month);
+  return el('section', { class: 'sheet-section' },
+    el('div', { attrs: { style: 'display:flex;align-items:baseline;justify-content:space-between;gap:8px' } },
+      el('h3', { text: 'This session' }),
+      el('button', { type: 'button', class: 'btn btn-quiet', attrs: { style: 'min-height:36px;color:var(--bronze-ink);text-decoration:underline' }, on: { click: resetToPattern } }, 'Reset to meeting pattern')),
+    el('div', { class: 'session-box' },
+      el('div', { class: 'top' },
+        el('strong', { text: groupName(session.club, session.category) }),
+        el('select', { class: 'input', id: 'fStatus', attrs: { 'aria-label': 'Status', style: 'min-height:36px' } },
+          el('option', { value: 'planned', text: 'Planned' }),
+          el('option', { value: 'cancelled', text: 'Cancelled' }))),
+      el('div', { class: 'row-fields' },
+        el('label', { class: 'field' }, 'Date',
+          el('input', { class: 'input', type: 'date', id: 'fDate', value: session.date,
+            min: session.month + '-01', max: session.month + '-' + String(dim).padStart(2, '0') })),
+        el('label', { class: 'field' }, 'Start', el('input', { class: 'input', type: 'time', id: 'fStart', value: session.start })),
+        el('label', { class: 'field' }, 'End', el('input', { class: 'input', type: 'time', id: 'fEnd', value: session.end }))),
+      el('span', { class: 'error', id: 'eSession' }),
+      // Bug B1: one tick per tile, because each tile is a separate email group.
+      // Moving the tile to another date clears it (the invitation named the old date).
+      el('label', { class: 'check-row' },
+        el('input', { type: 'checkbox', id: 'fInvites', checked: !!session.invitesSent }),
+        el('span', { text: 'Invitations sent to ' + groupName(session.club, session.category) }),
+        session.invitesSent && session.invitesSentAt
+          ? el('span', { class: 'note', attrs: { style: 'font-weight:400' }, text: '(' + DateEngine.formatDayDate(session.invitesSentAt.slice(0, 10), true) + ')' })
+          : null),
+      calendarButton(session)));
+}
+
+/* --- Add to calendar (Nice to Have 4) ----------------------------------------------
+   A button that downloads a calendar entry (.ics file) for one placed session.
+   The iPad opens it in Apple Calendar; a PC opens it in Outlook (or it can be
+   imported into Google Calendar). It always uses the session as last saved.     */
+function calendarButton(session) {
+  if (!session || session.status === 'cancelled') return null;
+  return el('button', { type: 'button', class: 'btn btn-outline-bronze', attrs: { style: 'align-self:flex-start' },
+    on: { click: () => downloadCalendarEntry(session) } }, icon('calendar'), 'Add to calendar');
+}
+
+/** Build the .ics text for a session and hand it to the browser as a download. */
+function downloadCalendarEntry(session) {
+  const topic = state.plan.topics[session.topicId] || { title: 'Club session' };
+  const club = clubOf(session.club);
+  const group = groupName(session.club, session.category);
+  const lines = [group + (club ? ' — ' + club.name : '')];
+  if (topic.presenter) lines.push('Presenter: ' + presenterName(topic.presenter));
+  if (isSafeUrl(topic.notesUrl)) lines.push('Tutorial notes: ' + topic.notesUrl);
+  if (isSafeUrl(topic.slidesUrl)) lines.push('Slides: ' + topic.slidesUrl);
+  const text = CalendarFile.build({
+    uid: sessionKey(session.month, session.club, session.category) + '@fornhamcc.github.io',
+    date: session.date, start: session.start, end: session.end,
+    title: topic.title + ' (' + group + ')',
+    description: lines.join('\n'),
+    stamp: new Date()
+  });
+  // A Blob is an in-memory file; URL.createObjectURL gives it a temporary
+  // address. An <a download> link to that address makes the browser save it as
+  // a file with the given name instead of opening it. The address is released
+  // a minute later, once the browser has finished with it.
+  const blob = new Blob([text], { type: 'text/calendar;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const name = (session.date + ' ' + group + ' - ' + topic.title).replace(/[^A-Za-z0-9 ._-]+/g, '').replace(/\s+/g, ' ').trim().slice(0, 100) + '.ics';
+  const a = el('a', { href: url, download: name, attrs: { hidden: true } });
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+  toast('Calendar entry downloaded. Open it to add it to your calendar.');
 }
 
 /** Links to the other sessions showing the same topic. */
@@ -1775,9 +2395,828 @@ function fieldError(inputId, errorId, message) {
 
 /* =====================================================================
    8. INTERACTIONS
-   Stage 1: header controls, the Edit switch, unlocking, and saving the
-   details panel. Dragging, tap-to-place, copy, paste and undo are Stage 2.
+   Header controls, the Edit switch and unlocking; selecting, placing,
+   moving, pairing, copy and paste, removing, deleting and undo; dragging
+   with mouse, finger or pencil; keyboard shortcuts; the details panel.
+
+   Every change to the plan goes through commit(): it records an undo entry
+   and queues the operations for saving (section 5). All the operations made by
+   one action share a "group", so they are saved, refused or undone together.
    ===================================================================== */
+
+/* --- Which cells can take what -------------------------------------------------- */
+
+/**
+ * True when a topic may go in a cell: the cell's column is the topic's category
+ * (a club event may go in any column), and the meeting pattern gives the cell a
+ * date (so never in a break month).
+ */
+function topicFitsCell(topicId, key) {
+  const topic = state.plan.topics[topicId];
+  if (!topic) return false;
+  const p = parseSessionKey(key);
+  if (topic.category !== p.cat && topic.category !== CLUB_EVENT) return false;
+  return !!DateEngine.sessionDate(settings(), p.month, p.club, p.cat);
+}
+
+/**
+ * The cells to light for the current selection or drag, as a Set of cell keys.
+ * - A tile can move to any empty cell its topic fits.
+ * - A topic from the tray (or copied) can go in any empty cell it fits.
+ * - While dragging only, occupied cells light too: dropping a tile there swaps
+ *   the two (if each fits the other's cell); dropping a topic there replaces
+ *   the tile (unless it already holds the same topic).
+ * Only the months and columns on screen are considered.
+ */
+function currentTargets() {
+  const targets = new Set();
+  if (!canEdit()) return targets;
+  const dragging = !!(state.drag && state.drag.active);
+  const source = dragging ? state.drag.source : state.pick;
+  if (!source) return targets;
+  const s = settings();
+  const cols = visibleColumns();
+  DateEngine.monthsBetween(state.range.from, state.range.to)
+    .filter(m => !DateEngine.isBreakMonth(s, m))
+    .forEach(month => cols.forEach(col => {
+      const key = sessionKey(month, col.club.code, col.cat.code);
+      const occupant = state.plan.sessions[key];
+      if (occupant && !dragging) return;   // swap / replace are drag-only
+      if (source.kind === 'tile') {
+        const moving = state.plan.sessions[source.key];
+        if (!moving || key === source.key || !topicFitsCell(moving.topicId, key)) return;
+        if (occupant && !topicFitsCell(occupant.topicId, source.key)) return;
+        if (occupant && occupant.topicId === moving.topicId) return;   // swapping a topic with itself does nothing useful
+      } else {
+        if (!topicFitsCell(source.topicId, key)) return;
+        if (occupant && occupant.topicId === source.topicId) return;
+      }
+      targets.add(key);
+    }));
+  return targets;
+}
+
+/** Forget a selection whose tile or topic no longer exists (deleted here or elsewhere). */
+function tidySelection() {
+  if (!canEdit()) { state.pick = null; state.prompt = null; state.cursorKey = null; return; }
+  const pk = state.pick;
+  if (pk && pk.kind === 'tile' && !state.plan.sessions[pk.key]) state.pick = null;
+  if (pk && pk.kind === 'topic' && !state.plan.topics[pk.topicId]) state.pick = null;
+  if (state.clipboard && !state.plan.topics[state.clipboard]) state.clipboard = null;
+}
+
+/** Clear the selection, the empty-cell cursor and any pairing suggestion. */
+function clearPick() {
+  state.pick = null; state.cursorKey = null; state.prompt = null;
+  render();
+}
+
+/* --- Taps and clicks ------------------------------------------------------------- */
+
+/**
+ * A click or tap on a tile always opens its details: read-only in View mode,
+ * editable in Edit mode. Opening never selects, moves or copies anything.
+ * Moving is by dragging, or by "Move to…" (right-click menu or details panel);
+ * copying is by "Copy" in the same places.
+ */
+function handleTileTap(key) {
+  closeMenu();
+  state.pick = null; state.cursorKey = null; state.prompt = null;
+  openDetails(key);
+}
+
+/** "Move to…": select a tile so a tap or click on a lit cell moves it there. */
+function startMove(key) {
+  closeMenu();
+  if (document.getElementById('detailsSheet').open) closeDetails();
+  state.pick = { kind: 'tile', key };
+  state.cursorKey = null; state.prompt = null;
+  render();
+  toast('Now click or tap a lit cell to move it there.');
+}
+
+/** "Place on board…": select a topic so a tap or click on a lit cell places it. */
+function startPlace(topicId) {
+  closeMenu();
+  if (document.getElementById('detailsSheet').open) closeDetails();
+  state.pick = { kind: 'topic', topicId, from: 'tray' };
+  state.cursorKey = null; state.prompt = null;
+  if (!trayDocked()) state.trayOverlay = false;
+  render();
+}
+
+/* --- The right-click menu (PC) ------------------------------------------------
+   A small menu of actions for a tile or a tray topic. It is a plain list of
+   buttons placed where the mouse was; any click elsewhere, Escape or scrolling
+   closes it. The keyboard's Menu key (or Shift+F10) opens it on a focused tile. */
+
+function openMenu(items, x, y, label) {
+  const menu = document.getElementById('ctxMenu');
+  menu.replaceChildren(...items.map(([text, iconName, run, cls]) =>
+    el('button', { type: 'button', class: 'menu-item ' + (cls || ''), attrs: { role: 'menuitem' },
+      on: { click: () => { closeMenu(); run(); } } }, icon(iconName), text)));
+  menu.setAttribute('aria-label', label);
+  menu.dataset.scrollTop = document.getElementById('gridScroll').scrollTop;
+  menu.hidden = false;
+  // Keep the menu on screen: measure it, then pull it back inside the window if needed.
+  const w = menu.offsetWidth, h = menu.offsetHeight;
+  menu.style.left = Math.max(8, Math.min(x, window.innerWidth - w - 8)) + 'px';
+  menu.style.top = Math.max(8, Math.min(y, window.innerHeight - h - 8)) + 'px';
+  menu.querySelector('button').focus();
+}
+function closeMenu() {
+  const menu = document.getElementById('ctxMenu');
+  if (menu && !menu.hidden) menu.hidden = true;
+}
+function openTileMenu(key, x, y) {
+  const ses = state.plan.sessions[key];
+  if (!ses) return;
+  const topic = state.plan.topics[ses.topicId] || { title: '' };
+  openMenu([
+    ['Edit details', 'edit', () => openDetails(key)],
+    ['Move to…', 'remove', () => startMove(key)],
+    ['Copy', 'copy', () => copyTopic(ses.topicId)],
+    ['Remove from board', 'trash', () => removeSession(key), 'danger']
+  ], x, y, 'Actions for ' + topic.title);
+}
+function openTrayMenu(topicId, x, y) {
+  const topic = state.plan.topics[topicId];
+  if (!topic) return;
+  openMenu([
+    ['Place on board…', 'plus', () => startPlace(topicId)],
+    ['Edit details', 'edit', () => openTopicDetails(topicId)],
+    ['Copy', 'copy', () => copyTopic(topicId)],
+    ['Delete topic', 'trash', () => deleteTopic(topicId), 'danger']
+  ], x, y, 'Actions for ' + topic.title);
+}
+
+/** The browser's contextmenu event (right-click, or the Menu key) on a tile or tray card. */
+function onContextMenu(e) {
+  if (!canEdit()) return;
+  const handle = e.target.closest && e.target.closest('[data-drag]');
+  if (!handle || e.target.closest('.drag-ghost')) return;
+  e.preventDefault();   // our menu instead of the browser's
+  if (state.drag) abandonDrag();
+  // From the keyboard there is no mouse position (0, 0): use the element's corner.
+  let x = e.clientX, y = e.clientY;
+  if (!x && !y) { const r = handle.getBoundingClientRect(); x = r.left + 12; y = r.top + 24; }
+  if (handle.dataset.drag === 'tile') openTileMenu(handle.closest('[data-key]').dataset.key, x, y);
+  else openTrayMenu(handle.dataset.topic, x, y);
+}
+
+/** A tap on an empty cell (Edit mode): place the selection, or offer New topic / Paste here. */
+function handleCellTap(key) {
+  const pick = state.pick;
+  if (pick && currentTargets().has(key)) { performDrop(pick, key); return; }
+  if (pick) {
+    const topicId = pick.kind === 'tile' ? (state.plan.sessions[pick.key] || {}).topicId : pick.topicId;
+    toast(whyNotHere(topicId, key));
+  }
+  state.pick = null; state.prompt = null;
+  state.cursorKey = key;
+  render();
+}
+
+/** A tap on a topic in the tray: select it for placing; a second tap opens its details. */
+function handleTrayTap(topicId) {
+  const pick = state.pick;
+  if (pick && pick.kind === 'topic' && pick.topicId === topicId) { openTopicDetails(topicId); return; }
+  state.pick = { kind: 'topic', topicId, from: 'tray' };
+  state.cursorKey = null; state.prompt = null;
+  if (!trayDocked()) state.trayOverlay = false;  // get the sliding tray out of the way of the board
+  render();
+}
+
+/** A plain-English reason a topic cannot go in a cell. */
+function whyNotHere(topicId, key) {
+  const topic = state.plan.topics[topicId];
+  const p = parseSessionKey(key);
+  if (!topic) return 'That topic no longer exists.';
+  if (topic.category !== p.cat && topic.category !== CLUB_EVENT) {
+    return '“' + topic.title + '” is a ' + categoryOf(topic.category).name + ' topic, so it can only go in a ' + categoryOf(topic.category).name + ' column.';
+  }
+  if (!DateEngine.sessionDate(settings(), p.month, p.club, p.cat)) return 'There is no meeting in that cell.';
+  return 'That cell already holds this topic.';
+}
+
+/* --- Making changes -------------------------------------------------------------- */
+
+/** A short random id: 't_' + 8 letters and digits for topics, 'g…' for operation groups. */
+function randomId(prefix) {
+  // crypto.getRandomValues gives good random numbers in every modern browser.
+  const bytes = crypto.getRandomValues(new Uint8Array(8));
+  return prefix + Array.from(bytes, b => (b % 36).toString(36)).join('');
+}
+function newTopicId() {
+  let id;
+  do { id = randomId('t_'); } while (state.plan.topics[id]);
+  return id;
+}
+
+/** Record an action's operations as one undo step and queue them for saving. */
+function commit(ops, label) {
+  if (!ops.length) return;
+  const group = randomId('g');
+  ops.forEach(op => { op.group = group; if (!op.label) op.label = label; });
+  state.undo.push({ group, label, ops: clone(ops) });
+  if (state.undo.length > UNDO_LIMIT) state.undo.shift();
+  queueOps(ops);
+}
+
+/**
+ * Undo the last action. Each operation is reversed (its 'after' becomes the new
+ * 'before'), newest first. The reversal is tried on a copy of the plan first:
+ * if anything has changed since (for example on another device), nothing is
+ * undone and a message explains. The reversal is saved like any other change.
+ */
+function undoLast() {
+  const entry = state.undo.pop();
+  if (!entry) { toast('Nothing to undo.'); return; }
+  const group = randomId('g');
+  const label = 'Undo: ' + entry.label;
+  const inverse = entry.ops.slice().reverse().map(op => Object.assign(makeOp(op.kind, op.id, op.after, op.before, label), { group }));
+  const trial = clone(state.plan);
+  if (applyOps(trial, inverse, true)) {
+    addMessage('warn', 'Could not undo “' + entry.label + '”, because it has been changed since, perhaps on another device. The board shows the newer version.');
+    render();
+    return;
+  }
+  state.pick = null; state.prompt = null; state.cursorKey = null;
+  queueOps(inverse);
+  toast('Undone: ' + entry.label);
+}
+
+/** The session a topic gets when placed in a cell: date and times from the meeting pattern. */
+function newSession(topicId, key) {
+  const p = parseSessionKey(key);
+  const pattern = DateEngine.sessionDate(settings(), p.month, p.club, p.cat);
+  return {
+    topicId, club: p.club, category: p.cat, month: p.month,
+    date: pattern.date, start: pattern.start, end: pattern.end,
+    status: 'planned', moved: false,
+    updatedAt: new Date().toISOString(), updatedBy: state.account.login
+  };
+}
+
+/** Do whatever a drop (or a tap on a lit cell) means for this source and cell. */
+function performDrop(source, key) {
+  if (source.kind === 'tile') return moveSession(source.key, key);
+  return placeTopic(source.topicId, key, {});
+}
+
+/**
+ * Put a topic in a cell. An occupied cell asks first: the tile already there
+ * goes back to the tray (its topic is kept). Afterwards, suggest the same topic
+ * for the other club (pairing) unless told not to.
+ */
+async function placeTopic(topicId, key, options) {
+  const topic = state.plan.topics[topicId];
+  if (!topic || !topicFitsCell(topicId, key)) { toast(whyNotHere(topicId, key)); return; }
+  const occupant = state.plan.sessions[key];
+  if (occupant) {
+    const other = state.plan.topics[occupant.topicId] || { title: 'another topic' };
+    const answer = await ask('Replace “' + other.title + '”?',
+      describeSession(key) + ' already has “' + other.title + '”. Put “' + topic.title + '” there instead? “' +
+      other.title + '” goes back to the tray; nothing is deleted.',
+      [['cancel', 'Cancel'], ['replace', 'Replace', 'btn-dark']]);
+    if (answer !== 'replace') return;
+  }
+  const ses = newSession(topicId, key);
+  commit([makeOp('session', key, occupant || null, ses)],
+    'Place “' + topic.title + '” at ' + describeSession(key));
+  const wasCopy = state.pick && state.pick.kind === 'topic' && state.pick.from === 'copy';
+  state.pick = null; state.cursorKey = null; state.prompt = null;
+  if (!options.noPair) offerPairing(topicId, key);
+  render();
+  toast('Placed at ' + groupName(ses.club, ses.category) + ', ' + DateEngine.formatDayDate(ses.date) + (wasCopy ? '. Ctrl+V pastes it again.' : '.'));
+}
+
+/**
+ * Move a tile to another cell; the date and times come from the new cell's
+ * meeting pattern. Onto an occupied cell it asks whether to swap the two.
+ * Both halves of a move (or a swap) are one action, saved and undone together.
+ */
+async function moveSession(fromKey, toKey) {
+  const moving = state.plan.sessions[fromKey];
+  if (!moving) return;
+  const topic = state.plan.topics[moving.topicId] || { title: 'this topic' };
+  if (!topicFitsCell(moving.topicId, toKey)) { toast(whyNotHere(moving.topicId, toKey)); return; }
+  const occupant = state.plan.sessions[toKey];
+  let ops, label;
+  if (occupant && occupant.topicId === moving.topicId) {
+    // Both tiles show the same topic: a swap would change nothing except reset
+    // their dates and times to the meeting pattern, losing any edits.
+    toast('That cell already has “' + topic.title + '”.');
+    return;
+  }
+  if (occupant) {
+    const other = state.plan.topics[occupant.topicId] || { title: 'another topic' };
+    if (!topicFitsCell(occupant.topicId, fromKey)) { toast('“' + other.title + '” cannot go in the cell “' + topic.title + '” is leaving, so they cannot swap.'); return; }
+    const answer = await ask('Swap the two topics?',
+      describeSession(toKey) + ' already has “' + other.title + '”. Swap it with “' + topic.title + '”?',
+      [['cancel', 'Cancel'], ['swap', 'Swap', 'btn-dark']]);
+    if (answer !== 'swap') return;
+    ops = [makeOp('session', fromKey, moving, newSession(occupant.topicId, fromKey)),
+           makeOp('session', toKey, occupant, newSession(moving.topicId, toKey))];
+    label = 'Swap “' + topic.title + '” and “' + other.title + '”';
+  } else {
+    ops = [makeOp('session', fromKey, moving, null), makeOp('session', toKey, null, newSession(moving.topicId, toKey))];
+    label = 'Move “' + topic.title + '” to ' + describeSession(toKey);
+  }
+  commit(ops, label);
+  state.pick = null; state.cursorKey = null; state.prompt = null;
+  if (!occupant) offerMovePartner(moving, fromKey, toKey);
+  render();
+  const now = state.plan.sessions[toKey];
+  // A moved or swapped tile is a fresh session (see newSession), so any
+  // "Invitations sent" tick is cleared: the invitation named the old date.
+  const tickCleared = moving.invitesSent || (occupant && occupant.invitesSent);
+  toast((occupant ? 'Swapped. ' : 'Moved to ') + (occupant ? '' : DateEngine.formatDayDate(now.date) + '.') +
+    (moving.moved ? ' Its date and times now follow the meeting pattern.' : '') +
+    (tickCleared ? ' The “Invitations sent” tick was cleared, as the date changed.' : ''));
+}
+
+/**
+ * Pairing after placing: the clubs usually take the same topic in the same
+ * month, so suggest the matching cell at the other club, with its own date from
+ * the meeting pattern, if it is free and the topic is not already placed there.
+ */
+function offerPairing(topicId, key) {
+  const p = parseSessionKey(key);
+  const topic = state.plan.topics[topicId];
+  const placed = topicPlacement(topicId).byClub;
+  for (const club of settings().clubs) {
+    if (club.code === p.club) continue;
+    const otherKey = sessionKey(p.month, club.code, p.cat);
+    const pattern = DateEngine.sessionDate(settings(), p.month, club.code, p.cat);
+    if (!pattern || state.plan.sessions[otherKey]) continue;
+    if ((placed[club.code] || []).some(([, s]) => s.category === p.cat)) continue;
+    const when = DateEngine.formatDayDate(pattern.date);
+    state.prompt = {
+      text: ['Also place ', el('strong', { text: topic.title }), ' at ' + groupName(club.code, p.cat) + ' on ' + when + '?'],
+      button: 'Place on ' + when,
+      run: () => placeTopic(topicId, otherKey, { noPair: true })
+    };
+    return;
+  }
+}
+
+/**
+ * Pairing after moving: if the other club had the same topic in the same month
+ * and column, offer to move it to the matching cell of the new month too.
+ */
+function offerMovePartner(moving, fromKey, toKey) {
+  const from = parseSessionKey(fromKey), to = parseSessionKey(toKey);
+  const topic = state.plan.topics[moving.topicId];
+  for (const club of settings().clubs) {
+    if (club.code === from.club) continue;
+    const partnerKey = sessionKey(from.month, club.code, from.cat);
+    const partner = state.plan.sessions[partnerKey];
+    const targetKey = sessionKey(to.month, club.code, to.cat);
+    if (!partner || partner.topicId !== moving.topicId || partnerKey === targetKey) continue;
+    if (state.plan.sessions[targetKey] || !topicFitsCell(moving.topicId, targetKey)) continue;
+    const when = DateEngine.formatDayDate(DateEngine.sessionDate(settings(), to.month, club.code, to.cat).date);
+    state.prompt = {
+      text: ['Also move ' + club.code + '’s ', el('strong', { text: topic.title }), ' to ' + when + '?'],
+      button: 'Move ' + club.code + ' too',
+      run: () => moveSession(partnerKey, targetKey)
+    };
+    return;
+  }
+}
+
+/** Run the pairing suggestion shown in the strip. */
+function runPrompt() {
+  const prompt = state.prompt;
+  state.prompt = null;
+  if (prompt) prompt.run();
+}
+
+/** Copy a topic: it stays where it is, and lit cells show where it can be pasted. */
+function copyTopic(topicId) {
+  const topic = state.plan.topics[topicId];
+  if (!topic) return;
+  state.clipboard = topicId;
+  state.pick = { kind: 'topic', topicId, from: 'copy' };
+  state.cursorKey = null; state.prompt = null;
+  render();
+  toast('Copied “' + topic.title + '”. Tap a lit cell to paste it.');
+}
+
+/** Paste the copied topic into a cell. */
+function pasteInto(key) {
+  if (!state.clipboard || !state.plan.topics[state.clipboard]) { toast('Nothing copied yet. Select a tile and press Copy.'); return; }
+  if (!topicFitsCell(state.clipboard, key)) { toast(whyNotHere(state.clipboard, key)); return; }
+  placeTopic(state.clipboard, key, {});
+}
+
+/** Take a tile off the board. The topic stays in the tray for placing again. */
+function removeSession(key) {
+  const ses = state.plan.sessions[key];
+  if (!ses) return;
+  const topic = state.plan.topics[ses.topicId] || { title: 'topic' };
+  commit([makeOp('session', key, ses, null)], 'Remove “' + topic.title + '” from ' + describeSession(key));
+  state.pick = null; state.prompt = null;
+  if (state.details && state.details.key === key) closeDetails();
+  render();
+  toast('Removed from the board. The topic is still in the tray; Undo puts it back.');
+}
+
+/**
+ * Delete a topic, after asking (Nice to Have 5: keep the past).
+ * - No tiles before today: one question, then the topic and all its tiles go.
+ * - Some tiles before today: those are the record of what was taught, so the
+ *   question offers "Remove future tiles only" (the topic and its past tiles
+ *   stay, and the topic leaves the Upcoming tray once its dates pass) as well
+ *   as "Delete everything" (for a topic made by mistake).
+ * Whichever is chosen is one action: saved together and undone together.
+ * A session dated today counts as upcoming.
+ */
+async function deleteTopic(topicId) {
+  const topic = state.plan.topics[topicId];
+  if (!topic) return;
+  const placed = sessionsOfTopic(topicId);
+  const todayDate = today().date;
+  const past = placed.filter(([, s]) => s.date < todayDate);
+  const future = placed.filter(([, s]) => s.date >= todayDate);
+  const list = items => items.map(([k, s]) => groupName(s.club, s.category) + ' ' + DateEngine.formatDayDate(s.date, true)).join('; ');
+  const tiles = n => n + (n === 1 ? ' tile' : ' tiles');
+  let answer;
+  if (!past.length) {
+    answer = await ask('Delete “' + topic.title + '”?',
+      placed.length
+        ? 'This deletes the topic and removes its ' + tiles(placed.length) + ' from the board (' +
+          placed.map(([k]) => describeSession(k)).join('; ') + '). Undo can bring it back.'
+        : 'This deletes the topic from the tray. Undo can bring it back.',
+      [['cancel', 'Cancel'], ['everything', 'Delete', 'btn-dark']]);
+  } else if (!future.length) {
+    answer = await ask('Delete “' + topic.title + '”?',
+      'All its sessions have already taken place (' + list(past) + '). They are the record of what was taught. ' +
+      'You do not need to delete it: it no longer shows in the Upcoming list. Delete it only if it was made by mistake.',
+      [['cancel', 'Keep it'], ['everything', 'Delete everything', 'btn-danger-text']]);
+  } else {
+    answer = await ask('Keep the past sessions?',
+      '“' + topic.title + '” has already been taught (' + list(past) + '). ' +
+      'Remove future tiles only keeps the topic and those past sessions as the record, and takes its ' + tiles(future.length) +
+      ' off the board (' + list(future) + '). Delete everything removes the topic and all its tiles.',
+      [['cancel', 'Cancel'], ['everything', 'Delete everything', 'btn-danger-text'], ['future', 'Remove future tiles only', 'btn-dark']]);
+  }
+  if (answer === 'future') {
+    commit(future.map(([k, s]) => makeOp('session', k, s, null)), 'Remove future tiles of “' + topic.title + '”');
+    if (state.details && future.some(([k]) => k === state.details.key)) closeDetails();
+    state.pick = null; state.prompt = null;
+    render();
+    toast('Removed ' + tiles(future.length) + '. The past sessions of “' + topic.title + '” are kept.');
+    return;
+  }
+  if (answer !== 'everything') return;
+  const ops = placed.map(([k, s]) => makeOp('session', k, s, null));
+  ops.push(makeOp('topic', topicId, topic, null));
+  commit(ops, 'Delete topic “' + topic.title + '”');
+  if (state.details && state.details.topicId === topicId) closeDetails();
+  state.pick = null; state.prompt = null;
+  if (state.clipboard === topicId) state.clipboard = null;
+  render();
+  toast('Deleted “' + topic.title + '”.');
+}
+
+/* --- New topic ----------------------------------------------------------------- */
+
+/**
+ * Open the New topic dialog. From an empty cell, the category is that column's
+ * (or Club event) and "Place it here" is ticked.
+ */
+function openNewTopic(cellKey) {
+  const dlg = document.getElementById('topicDialog');
+  const catSel = document.getElementById('ntCategory');
+  const cell = cellKey ? parseSessionKey(cellKey) : null;
+  const codes = cell ? [cell.cat, CLUB_EVENT] : CATEGORY_ORDER.concat([CLUB_EVENT]);
+  catSel.replaceChildren(...codes.map(code => el('option', { value: code, text: categoryOf(code).name })));
+  if (!cell && state.platform !== 'all') {
+    const first = settings().categories.find(c => c.platform === state.platform);
+    if (first) catSel.value = first.code;
+  }
+  const presSel = document.getElementById('ntPresenter');
+  presSel.replaceChildren(el('option', { value: '', text: '— No presenter —' }),
+    ...settings().presenters.filter(p => p.active !== false).map(p => el('option', { value: p.code, text: p.code + ' — ' + p.name })));
+  document.getElementById('ntTitle').value = '';
+  fieldError('ntTitle', 'ntTitleError', '');
+  const row = document.getElementById('ntPlaceRow');
+  row.hidden = !cell;
+  document.getElementById('ntPlace').checked = true;
+  if (cell) {
+    const pattern = DateEngine.sessionDate(settings(), cell.month, cell.club, cell.cat);
+    document.getElementById('ntPlaceText').textContent = 'Place it at ' + groupName(cell.club, cell.cat) + ', ' + DateEngine.formatDayDate(pattern.date);
+  }
+  dlg.dataset.cell = cellKey || '';
+  dlg.showModal();
+  setTimeout(() => document.getElementById('ntTitle').focus(), 50);
+}
+
+/** "Create topic": add it to the tray, and place it if asked. */
+function confirmNewTopic() {
+  const dlg = document.getElementById('topicDialog');
+  const title = document.getElementById('ntTitle').value.trim();
+  if (!fieldError('ntTitle', 'ntTitleError', title ? '' : 'Please give the topic a title.')) return;
+  const id = newTopicId();
+  const topic = {
+    title, category: document.getElementById('ntCategory').value,
+    presenter: document.getElementById('ntPresenter').value,
+    notesUrl: '', slidesUrl: '', briefing: '',
+    updatedAt: new Date().toISOString(), updatedBy: state.account.login
+  };
+  const cellKey = dlg.dataset.cell;
+  const place = !!cellKey && document.getElementById('ntPlace').checked && !state.plan.sessions[cellKey];
+  const ops = [makeOp('topic', id, null, topic)];
+  dlg.close();
+  if (place) {
+    // The topic must exist before newSession/topicFitsCell look at it, so add it to
+    // the on-screen plan's copy first: queueOps rebuilds the plan from the ops anyway.
+    state.plan.topics[id] = topic;
+    ops.push(makeOp('session', cellKey, null, newSession(id, cellKey)));
+  }
+  commit(ops, 'New topic “' + title + '”' + (place ? ' at ' + describeSession(cellKey) : ''));
+  state.cursorKey = null; state.prompt = null;
+  if (place) {
+    state.pick = null;
+    offerPairing(id, cellKey);
+    toast('Created and placed.');
+  } else {
+    // Select the new topic so the lit cells show where it can go.
+    state.pick = { kind: 'topic', topicId: id, from: 'tray' };
+    toast('Created. Tap a lit cell to place it, or drag it from the tray.');
+  }
+  render();
+}
+
+/* --- A question with buttons ---------------------------------------------------- */
+
+/**
+ * Show a question in a dialog and resolve with the value of the button pressed
+ * ('cancel' if closed with Escape). buttons: [[value, label, extraClass], …].
+ * A <dialog> opened with showModal() keeps focus inside it until it closes.
+ */
+function ask(title, text, buttons) {
+  return new Promise(resolve => {
+    const dlg = document.getElementById('askDialog');
+    document.getElementById('askTitle').textContent = title;
+    document.getElementById('askText').textContent = text;
+    document.getElementById('askButtons').replaceChildren(...buttons.map(([value, label, cls]) =>
+      el('button', { type: 'button', class: 'btn ' + (cls || ''), text: label, on: { click: () => dlg.close(value) } })));
+    dlg.returnValue = 'cancel';
+    dlg.addEventListener('close', () => resolve(dlg.returnValue || 'cancel'), { once: true });
+    dlg.showModal();
+    // Focus the main (dark) button so Enter confirms it. Where there is none,
+    // as when the only other choice is "Delete everything", focus the first,
+    // safe button, so Enter can never delete by accident.
+    const main = dlg.querySelector('#askButtons .btn-dark') || dlg.querySelector('#askButtons button');
+    if (main) main.focus();
+  });
+}
+
+/* --- The tray button ------------------------------------------------------------ */
+function toggleTray() {
+  if (trayDocked()) { state.trayOpen = !state.trayOpen; savePrefs(); }
+  else state.trayOverlay = !state.trayOverlay;
+  render();
+}
+
+/* --- Dragging ----------------------------------------------------------------------
+   Written once with Pointer Events, which report mouse, finger and Apple Pencil
+   alike (e.pointerType says which). The browser's own drag-and-drop is not used:
+   it does not work reliably on the iPad.
+   1. pointerdown on a tile or tray card records a *possible* drag.
+   2. Mouse: it becomes a drag once the pointer moves a few pixels.
+      Finger or pencil: it becomes a drag after a 300 ms press-and-hold; moving
+      further than a few pixels before that means the person is scrolling, so
+      the possible drag is dropped and the browser scrolls as usual.
+   3. While dragging, a "ghost" copy follows the pointer, valid cells are lit,
+      the cell underneath is highlighted, and near the board's edges the board
+      scrolls. touchmove is cancelled so the iPad does not scroll the page too.
+   4. On release over a lit cell the drop is carried out (move, swap, place).
+      Dropping a tile on the tray takes it off the board.
+   The page is not redrawn mid-drag (see render): on the iPad, removing the
+   element a finger started on stops its touch events arriving.                  */
+
+let suppressClickUntil = 0;   // a drag ends with a click event; this swallows it
+
+function onPointerDown(e) {
+  if (!canEdit() || state.drag) return;
+  if (e.pointerType === 'mouse' && e.button !== 0) return;   // left button only
+  const handle = e.target.closest('[data-drag]');
+  if (!handle) return;
+  const source = handle.dataset.drag === 'tile'
+    ? { kind: 'tile', key: handle.closest('[data-key]').dataset.key }
+    : { kind: 'topic', topicId: handle.dataset.topic };
+  const rect = handle.getBoundingClientRect();
+  state.drag = {
+    source, handle, pointerId: e.pointerId, pointerType: e.pointerType,
+    startX: e.clientX, startY: e.clientY, x: e.clientX, y: e.clientY,
+    offsetX: Math.min(e.clientX - rect.left, 170), offsetY: e.clientY - rect.top,
+    width: Math.min(rect.width, 220),
+    active: false, overKey: null, overTray: false, holdTimer: null, frame: null, renderLater: false
+  };
+  if (e.pointerType !== 'mouse') {
+    state.drag.holdTimer = setTimeout(() => { if (state.drag && !state.drag.active) startDrag(); }, DRAG.holdDelay);
+  }
+}
+
+function onPointerMove(e) {
+  const d = state.drag;
+  if (!d || e.pointerId !== d.pointerId) return;
+  d.x = e.clientX; d.y = e.clientY;
+  const dist = Math.hypot(d.x - d.startX, d.y - d.startY);
+  if (!d.active) {
+    if (d.pointerType === 'mouse') { if (dist > DRAG.mouseThreshold) startDrag(); }
+    else if (dist > DRAG.holdSlop) abandonDrag();          // a swipe: let the board scroll
+    return;
+  }
+  e.preventDefault();
+  // How far the finger has wandered since the tile lifted: if it is released
+  // without really moving, the press-and-hold means "show the menu", not "drag".
+  d.wander = Math.max(d.wander || 0, Math.hypot(d.x - d.liftX, d.y - d.liftY));
+  positionGhost();
+  updateHover();
+}
+
+function onPointerUp(e) {
+  const d = state.drag;
+  if (!d || e.pointerId !== d.pointerId) return;
+  if (!d.active) { abandonDrag(); return; }               // a plain tap: the click handler deals with it
+  finishDrag(false);
+}
+
+/** The hold or the movement threshold was reached: lift the tile. */
+function startDrag() {
+  const d = state.drag;
+  clearTimeout(d.holdTimer);
+  d.active = true;
+  d.liftX = d.x; d.liftY = d.y; d.wander = 0;
+  state.pick = null; state.cursorKey = null; state.prompt = null;
+  // Grabbing from the sliding tray: hide the tray so the board is free to drop on.
+  const tray = document.getElementById('tray');
+  d.fromOverlay = d.source.kind === 'topic' && tray.classList.contains('overlay');
+  if (d.fromOverlay) tray.hidden = true;
+  d.handle.classList.add('is-drag-source');
+  document.getElementById('strip').hidden = true;
+  // The ghost: a copy of what is being dragged, inside a box that ignores the
+  // pointer (pointer-events: none) so elementFromPoint finds the cell beneath.
+  const ghost = el('div', { class: 'drag-ghost', attrs: { 'aria-hidden': 'true' } });
+  const copy = d.handle.cloneNode(true);
+  copy.classList.remove('is-drag-source', 'is-selected');
+  ghost.append(copy);
+  ghost.style.width = d.width + 'px';
+  document.body.append(ghost);
+  d.ghost = ghost;
+  document.body.classList.add('is-dragging');
+  // A short buzz on devices that support it (not iPad Safari), so a finger feels the lift.
+  if (d.pointerType !== 'mouse' && navigator.vibrate) navigator.vibrate(15);
+  lightTargets();
+  positionGhost();
+  updateHover();
+  d.frame = requestAnimationFrame(autoScroll);
+}
+
+/** Light the valid cells in place (no redraw: see the note above). */
+function lightTargets() {
+  const targets = currentTargets();
+  document.querySelectorAll('#board .cell[data-key]').forEach(cell => {
+    const lit = targets.has(cell.dataset.key);
+    cell.classList.toggle('lit', lit);
+    cell.classList.toggle('occupied', lit && !!state.plan.sessions[cell.dataset.key]);
+    cell.classList.remove('is-cursor');
+  });
+  state.drag.targets = targets;
+}
+
+function positionGhost() {
+  const d = state.drag;
+  // translate3d is drawn by the graphics chip, so the ghost follows smoothly.
+  d.ghost.style.transform = 'translate3d(' + (d.x - d.offsetX) + 'px,' + (d.y - d.offsetY) + 'px,0) rotate(-2deg)';
+}
+
+/** Highlight the cell under the pointer: bronze if it can take the drop, red if not. */
+function updateHover() {
+  const d = state.drag;
+  const under = document.elementFromPoint(d.x, d.y);
+  const cell = under && under.closest('#board .cell[data-key]');
+  const key = cell ? cell.dataset.key : null;
+  const overTray = !!(under && under.closest('#tray')) && d.source.kind === 'tile' && !document.getElementById('tray').hidden;
+  if (key !== d.overKey || overTray !== d.overTray) {
+    document.querySelectorAll('.drop-hover, .drop-refused').forEach(c => c.classList.remove('drop-hover', 'drop-refused'));
+    if (cell && !(d.source.kind === 'tile' && key === d.source.key)) {
+      cell.classList.add(d.targets.has(key) ? 'drop-hover' : 'drop-refused');
+    }
+    document.getElementById('tray').classList.toggle('drop-hover', overTray);
+    d.overKey = key; d.overTray = overTray;
+  }
+}
+
+/** Scroll the board while the pointer is near its edges, each animation frame. */
+function autoScroll() {
+  const d = state.drag;
+  if (!d || !d.active) return;
+  const box = document.getElementById('gridScroll');
+  const r = box.getBoundingClientRect();
+  const speed = dist => dist < DRAG.edgeZone ? Math.ceil(DRAG.edgeSpeed * (1 - Math.max(dist, 0) / DRAG.edgeZone)) : 0;
+  const dy = speed(d.y - r.top) ? -speed(d.y - r.top) : speed(r.bottom - d.y);
+  const dx = speed(d.x - r.left) ? -speed(d.x - r.left) : speed(r.right - d.x);
+  if (dx || dy) { box.scrollBy(dx, dy); updateHover(); }
+  d.frame = requestAnimationFrame(autoScroll);
+}
+
+/** Release: carry out the drop if the cell is lit, then tidy up. */
+function finishDrag(cancelled) {
+  const d = state.drag;
+  const key = d.overKey, overTray = d.overTray, source = d.source;
+  // iPad: press-and-hold then lift without moving opens the actions menu, like a
+  // right-click on the PC (Edit details, Move to…, Copy, Remove from board).
+  if (!cancelled && d.pointerType !== 'mouse' && (d.wander || 0) < DRAG.holdSlop * 2) {
+    const x = d.x, y = d.y;
+    cleanUpDrag();
+    suppressClickUntil = Date.now() + 250;
+    render();
+    if (source.kind === 'tile') openTileMenu(source.key, x, y);
+    else openTrayMenu(source.topicId, x, y);
+    return;
+  }
+  const valid = !cancelled && key && d.targets.has(key);
+  const refusedHere = !cancelled && key && !valid && !(source.kind === 'tile' && key === source.key);
+  cleanUpDrag();
+  suppressClickUntil = Date.now() + 250;
+  render();   // catch up on anything that changed during the drag, and clear the lit cells
+  if (valid) { performDrop(source, key); return; }
+  if (!cancelled && overTray && source.kind === 'tile') { removeSession(source.key); return; }
+  if (refusedHere) {
+    const topicId = source.kind === 'tile' ? (state.plan.sessions[source.key] || {}).topicId : source.topicId;
+    toast(whyNotHere(topicId, key));
+  }
+}
+
+function cleanUpDrag() {
+  const d = state.drag;
+  clearTimeout(d.holdTimer);
+  cancelAnimationFrame(d.frame);
+  if (d.ghost) d.ghost.remove();
+  if (d.handle) d.handle.classList.remove('is-drag-source');
+  document.body.classList.remove('is-dragging');
+  document.querySelectorAll('.drop-hover, .drop-refused').forEach(c => c.classList.remove('drop-hover', 'drop-refused'));
+  state.drag = null;
+}
+
+/** A possible drag that never started (a tap, or a swipe to scroll). */
+function abandonDrag() {
+  const d = state.drag;
+  if (!d) return;
+  clearTimeout(d.holdTimer);
+  state.drag = null;
+}
+
+/* --- Keyboard shortcuts (PC) ------------------------------------------------------ */
+
+/** The cell key of the focused element, if it is inside a cell. */
+function focusedCellKey() {
+  const cell = document.activeElement && document.activeElement.closest && document.activeElement.closest('#board .cell[data-key]');
+  return cell ? cell.dataset.key : null;
+}
+
+/**
+ * Ctrl+Z undo, Ctrl+C copy, Ctrl+V paste, Delete remove, Escape cancel.
+ * (Cmd on a Mac or an iPad keyboard.) Ignored while typing in a box or with a
+ * dialog open, so they never interfere with ordinary text editing.
+ */
+function onKeyDown(e) {
+  if (!canEdit() || state.view !== 'board') return;
+  if (document.querySelector('dialog[open]')) return;
+  const t = e.target;
+  if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+  const mod = e.ctrlKey || e.metaKey;
+  const k = e.key.toLowerCase();
+  const pick = state.pick;
+  const focusedKey = focusedCellKey();
+  if (mod && k === 'z' && !e.shiftKey) { e.preventDefault(); undoLast(); return; }
+  if (mod && k === 'c') {
+    const tileKey = pick && pick.kind === 'tile' ? pick.key : (focusedKey && state.plan.sessions[focusedKey] ? focusedKey : null);
+    const topicId = tileKey ? state.plan.sessions[tileKey].topicId : (pick && pick.kind === 'topic' ? pick.topicId : null);
+    if (topicId) { e.preventDefault(); copyTopic(topicId); }
+    return;
+  }
+  if (mod && k === 'v') {
+    const key = focusedKey || state.cursorKey;
+    if (key) { e.preventDefault(); pasteInto(key); }
+    else if (state.clipboard) toast('Click the cell to paste into, then press Ctrl+V.');
+    return;
+  }
+  if (!mod && (e.key === 'Delete' || e.key === 'Backspace')) {
+    if (pick && pick.kind === 'tile') { e.preventDefault(); removeSession(pick.key); }
+    else if (pick && pick.kind === 'topic' && pick.from === 'tray') { e.preventDefault(); deleteTopic(pick.topicId); }
+    else if (focusedKey && state.plan.sessions[focusedKey]) { e.preventDefault(); removeSession(focusedKey); }
+    return;
+  }
+  if (e.key === 'Escape' && (pick || state.cursorKey || state.prompt)) { e.preventDefault(); clearPick(); }
+}
+
+/* --- The details panel ---------------------------------------------------------- */
 
 /** Check the details form and queue the changes as operations. */
 function saveDetails() {
@@ -1786,19 +3225,23 @@ function saveDetails() {
   const title = val('fTitle').trim();
   const notesUrl = val('fNotes').trim();
   const slidesUrl = val('fSlides').trim();
-  const date = val('fDate'), start = val('fStart'), end = val('fEnd');
-  const p = parseSessionKey(d.key);
 
   let ok = true;
   ok = fieldError('fTitle', 'eTitle', !title ? 'Please give the topic a title.' : '') && ok;
   ok = fieldError('fNotes', 'eNotes', notesUrl && !isSafeUrl(notesUrl) ? 'Links must start with https://' : '') && ok;
   ok = fieldError('fSlides', 'eSlides', slidesUrl && !isSafeUrl(slidesUrl) ? 'Links must start with https://' : '') && ok;
-  let sessionProblem = '';
-  const pd = DateEngine.parseDate(date);
-  if (!pd || DateEngine.monthKey(pd.year, pd.month) !== p.month) sessionProblem = 'The date must be in ' + DateEngine.formatMonth(p.month) + '.';
-  else if (!DateEngine.isTime(start) || !DateEngine.isTime(end)) sessionProblem = 'Please enter a start and end time.';
-  else if (end <= start) sessionProblem = 'The end time must be after the start time.';
-  ok = fieldError('fDate', 'eSession', sessionProblem) && ok;
+  let date, start, end, p;
+  if (d.key) {
+    // Only a placed session has a date and times to check.
+    date = val('fDate'); start = val('fStart'); end = val('fEnd');
+    p = parseSessionKey(d.key);
+    let sessionProblem = '';
+    const pd = DateEngine.parseDate(date);
+    if (!pd || DateEngine.monthKey(pd.year, pd.month) !== p.month) sessionProblem = 'The date must be in ' + DateEngine.formatMonth(p.month) + '.';
+    else if (!DateEngine.isTime(start) || !DateEngine.isTime(end)) sessionProblem = 'Please enter a start and end time.';
+    else if (end <= start) sessionProblem = 'The end time must be after the start time.';
+    ok = fieldError('fDate', 'eSession', sessionProblem) && ok;
+  }
   if (!ok) return;
 
   const who = state.account.login;
@@ -1814,28 +3257,51 @@ function saveDetails() {
     notesUrl, slidesUrl,
     briefing: val('fBriefing').replace(/\r\n/g, '\n').trimEnd()
   });
+  // Bug B1: the invitations tick now lives on each session. Ticks left on a
+  // topic by the first Stage 2 test version are ignored, and dropped here the
+  // next time the topic is saved for any other reason.
+  delete tAfter.invitesSent;
+  delete tAfter.invitesSentAt;
   const topicFields = ['title', 'category', 'presenter', 'notesUrl', 'slidesUrl', 'briefing'];
-  if (topicFields.some(f => (tBefore[f] || '') !== (tAfter[f] || ''))) {
+  const topicChanged = topicFields.filter(f => (tBefore[f] || '') !== (tAfter[f] || ''));
+  if (topicChanged.length) {
     tAfter.updatedAt = stamp; tAfter.updatedBy = who;
-    ops.push(makeOp('topic', d.sessionBefore.topicId, d.topicBefore, tAfter, 'Edit topic “' + title + '”'));
+    ops.push(makeOp('topic', d.topicId, d.topicBefore, tAfter));
   }
 
   // Session: 'moved' is true whenever the date or times differ from the meeting pattern.
-  const sBefore = d.sessionBefore;
-  const pattern = DateEngine.sessionDate(settings(), p.month, p.club, p.cat);
-  const sAfter = Object.assign({}, sBefore, {
-    date, start, end,
-    status: val('fStatus'),
-    moved: !pattern || pattern.date !== date || pattern.start !== start || pattern.end !== end
-  });
-  if (['date', 'start', 'end', 'status', 'moved'].some(f => sBefore[f] !== sAfter[f])) {
-    sAfter.updatedAt = stamp; sAfter.updatedBy = who;
-    ops.push(makeOp('session', d.key, sBefore, sAfter, 'Change ' + describeSession(d.key) + ' session'));
+  let sessionChanged = [], invites = false, tickCleared = false;
+  if (d.key) {
+    const sBefore = d.sessionBefore;
+    const pattern = DateEngine.sessionDate(settings(), p.month, p.club, p.cat);
+    invites = document.getElementById('fInvites').checked;
+    // A changed date makes the invitation already sent out of date, so a tick
+    // carried over untouched is cleared. Ticking it during this same edit
+    // (invitations re-sent for the new date) keeps it.
+    if (invites && sBefore.invitesSent && date !== sBefore.date) { invites = false; tickCleared = true; }
+    const sAfter = Object.assign({}, sBefore, {
+      date, start, end,
+      status: val('fStatus'),
+      moved: !pattern || pattern.date !== date || pattern.start !== start || pattern.end !== end,
+      invitesSent: invites,
+      // Remember when the tick was first set; clearing the tick clears the date.
+      invitesSentAt: invites ? (sBefore.invitesSent ? (sBefore.invitesSentAt || stamp) : stamp) : ''
+    });
+    sessionChanged = ['date', 'start', 'end', 'status', 'moved', 'invitesSent'].filter(f => (sBefore[f] || false) !== (sAfter[f] || false));
+    if (sessionChanged.length) {
+      sAfter.updatedAt = stamp; sAfter.updatedBy = who;
+      ops.push(makeOp('session', d.key, sBefore, sAfter));
+    }
   }
 
   closeDetails();
   if (!ops.length) return;
-  queueOps(ops);
+  const onlyInvites = !topicChanged.length && sessionChanged.join() === 'invitesSent';
+  const label = onlyInvites ? (invites ? 'Tick' : 'Untick') + ' invitations sent for “' + title + '” at ' + describeSession(d.key)
+    : !topicChanged.length ? 'Change ' + describeSession(d.key) + ' session'
+    : 'Edit topic “' + title + '”';
+  commit(ops, label);
+  if (tickCleared) { toast('Saved. The date changed, so its “Invitations sent” tick was cleared.'); return; }
   toast('Saved on this device — sending to GitHub…');
 }
 
@@ -1892,7 +3358,7 @@ function removeKey() {
   if (state.pending.length && !confirm('Some changes have not been saved yet and will be lost. Remove the key anyway?')) return;
   if (!state.pending.length && !confirm('Remove the editing key from this device? You will need to paste it again to edit here.')) return;
   storeRemove(STORE.key);
-  state.key = null; state.account = null; state.mode = 'view'; state.pending = [];
+  state.key = null; state.account = null; state.mode = 'view'; state.pending = []; state.undo = [];
   render();
   setSaveStatus('reader');
   toast('Key removed. This device is now view-only.');
@@ -1945,7 +3411,7 @@ function goToThisMonth() {
   const now = today().month;
   if (now < state.range.from || now > state.range.to) setRange(now, DateEngine.addMonths(now, 11));
   const row = document.querySelector('.row[data-month="' + now + '"] .mcell');
-  const scroller = document.getElementById('boardView');
+  const scroller = document.getElementById('gridScroll');
   if (row) scroller.scrollTo({ top: row.offsetTop - scroller.querySelector('.sub').offsetHeight - scroller.querySelector('.band').offsetHeight, behavior: 'smooth' });
   else scroller.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -1975,9 +3441,55 @@ function bindControls() {
   document.getElementById('guideLink').href = GUIDE_URL;
   document.getElementById('editSwitch').addEventListener('click', () => {
     state.mode = state.mode === 'edit' ? 'view' : 'edit';
+    if (state.mode === 'view') { state.pick = null; state.cursorKey = null; state.prompt = null; state.trayOverlay = false; }
     render();
-    toast(state.mode === 'edit' ? 'Editing is on. Tap a tile to change it.' : 'Editing is off.');
+    toast(state.mode === 'edit' ? 'Editing is on. Click a tile to edit it, drag to move it, right-click for more.' : 'Editing is off.');
   });
+
+  // --- Stage 2: editing the board ---
+  document.getElementById('undoBtn').addEventListener('click', undoLast);
+  document.getElementById('trayBtn').addEventListener('click', toggleTray);
+  document.getElementById('newTopicBtn').addEventListener('click', () => openNewTopic(state.cursorKey && !state.plan.sessions[state.cursorKey] ? state.cursorKey : null));
+  document.getElementById('ntCreate').addEventListener('click', confirmNewTopic);
+  document.getElementById('ntTitle').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); confirmNewTopic(); } });
+  // Dragging: listen on the whole document so the drag carries on wherever the
+  // pointer goes. pointermove is registered with passive: false so that, once a
+  // drag has started, preventDefault() can stop the browser acting on the move.
+  document.addEventListener('pointerdown', onPointerDown);
+  document.addEventListener('pointermove', onPointerMove, { passive: false });
+  document.addEventListener('pointerup', onPointerUp);
+  // pointercancel: the browser took the pointer over (for example it began to
+  // scroll) or the system interrupted; drop the drag without doing anything.
+  document.addEventListener('pointercancel', () => { if (state.drag) { if (state.drag.active) finishDrag(true); else abandonDrag(); } });
+  // On the iPad, a finger moving during a drag would also scroll the board.
+  // Cancelling touchmove (only while a drag is active) stops that. passive: false
+  // is required, or Safari ignores preventDefault here.
+  document.addEventListener('touchmove', e => { if (state.drag && state.drag.active) e.preventDefault(); }, { passive: false });
+  // A long press can open a context menu (Windows touch screens, some browsers);
+  // in Edit mode a long press on a tile means "drag", so suppress the menu there.
+  document.addEventListener('contextmenu', onContextMenu);
+  // Close the right-click menu on any press outside it, on Escape, or when the board scrolls.
+  document.addEventListener('pointerdown', e => { if (!e.target.closest('#ctxMenu')) closeMenu(); }, true);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMenu(); }, true);
+  // Only a scroll that happens after the menu opened closes it (a late scroll event
+  // from just before the right-click must not).
+  document.getElementById('gridScroll').addEventListener('scroll', e => {
+    const menu = document.getElementById('ctxMenu');
+    if (!menu.hidden && Math.abs(e.target.scrollTop - Number(menu.dataset.scrollTop || 0)) > 4) closeMenu();
+  }, { passive: true });
+  // Swallow the click that some browsers send at the end of a drag (registered
+  // in the capture phase, so it runs before the tile's own click handler).
+  // Only clicks on the board or tray are swallowed, so a quick press of a strip
+  // or dialog button straight after a drop still works.
+  document.addEventListener('click', e => {
+    if (Date.now() < suppressClickUntil && e.target.closest && e.target.closest('#board, #tray')) {
+      e.stopPropagation(); e.preventDefault();
+    }
+  }, true);
+  document.addEventListener('keydown', onKeyDown);
+  // The tray docks or slides depending on the window width; redraw it when that changes.
+  let resizeTimer = null;
+  window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => { if (!state.drag) render(); }, 150); });
   // Clicking the dim backdrop around the details sheet closes it (a click on the
   // backdrop reports the <dialog> itself as its target).
   document.getElementById('detailsSheet').addEventListener('click', e => { if (e.target.id === 'detailsSheet') closeDetails(); });
@@ -2009,7 +3521,7 @@ function bindControls() {
  * while changes are queued, because runSave already deals with newer copies.
  */
 async function refreshPlan(byHand) {
-  if (!state.plan || state.saving || state.pending.length) return;
+  if (!state.plan || state.saving || state.pending.length || state.drag) return;
   try {
     if (state.account) {
       const latest = await fetchPlanFromApi(state.remote.etag);

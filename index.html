@@ -121,6 +121,8 @@ a:hover { color: var(--bronze-deep); }
   font-size: 15px; white-space: nowrap;
 }
 .btn:hover { background: var(--surface-2); }
+label.btn { cursor: pointer; }   /* the Restore control is a label around a file input */
+label.btn:focus-within { outline: 3px solid var(--bronze); outline-offset: 2px; }
 .btn[disabled] { opacity: .5; cursor: default; }
 .btn-dark { background: var(--ink); color: #FFFFFF; border-color: var(--ink); font-weight: 700; }
 .btn-dark:hover { background: #33312D; }
@@ -1786,6 +1788,13 @@ function categoryOf(code) {
   return s.categories.find(c => c.code === code);
 }
 function clubOf(code) { return settings().clubs.find(c => c.code === code); }
+/** A club's short name ("Fornham"): the Settings short name, else the full name
+    without " Computer Club". Used where the wording should still read correctly
+    if the two clubs are ever merged under one name (Nice to Have 15). */
+function clubShortName(club) {
+  if (!club) return '';
+  return (club.shortName || '').trim() || club.name.replace(/\s*Computer Club\s*$/i, '').trim() || club.code;
+}
 function sessionKey(month, club, cat) { return month + '_' + club + '_' + cat; }
 function parseSessionKey(key) {
   const [month, club, cat] = String(key).split('_');
@@ -2450,7 +2459,7 @@ function buildClubsCard(editable) {
       el('legend', { text: c.code }),
       el('div', { class: 'set-grid' },
         setInput('Full name', c.name, { attrs: { 'data-f': 'name' } }),
-        setInput('Short name (used in the heading)', c.shortName, { attrs: { 'data-f': 'shortName' } }),
+        setInput('Short name (heading and PDFs page)', c.shortName, { attrs: { 'data-f': 'shortName' } }),
         setSelect('Meets on', c.meetingDay, WEEKDAYS, { attrs: { 'data-f': 'meetingDay' } })))),
     el('p', { class: 'note', text: 'The codes (GBCC, FCC) cannot be changed: every tile refers to them.' })
   ];
@@ -4365,8 +4374,8 @@ function pdfChoices() {
 
 /* --- Simple choices (Stage 4c) ------------------------------------------------
    Members choose in up to three short steps, each a row of large buttons:
-     1. Club:  each club, or Both clubs (both = the whole plan, straight to step 3)
-     2. Group: that club's four groups in their board colours, or All four groups
+     1. "Which group?":   each club by short name, or Both (= the whole plan, straight to step 3)
+     2. "Which session?": that club's four sessions in their board colours, or All four
      3. Year:  the current year, with ‹ › to step through years, then Make PDF
    The choices map onto the same PDF types as the full page, so the PDFs are
    identical: one group → 'group', all four → 'club', both clubs → 'whole'.
@@ -4401,25 +4410,30 @@ function renderPdfsSimple(box) {
   const back = (step) => el('button', { type: 'button', class: 'btn btn-quiet pdf-back', on: { click: () => go({ step }) } }, icon('left'), 'Back');
   const more = el('button', { type: 'button', class: 'btn btn-quiet pdf-more', id: 'pdfMore', on: { click: () => go({ simple: false }) } }, 'More options…');
 
-  // What has been chosen so far, e.g. "Fornham Computer Club › FCC iPad Beginners"
+  // What has been chosen so far, e.g. "Fornham › FCC iPad Beginners".
+  // Wording (Nice to Have 15): the clubs are called "groups" here by their short
+  // names (Great Barton / Fornham / Both) and the four sub-groups "sessions", so the
+  // page still reads correctly if the clubs merge under one name.
   const trail = [];
-  if (c.step !== 'club') trail.push(c.type === 'whole' ? 'Both clubs' : clubOf(c.club).name);
+  if (c.step !== 'club') trail.push(c.type === 'whole' ? 'Both' : clubShortName(clubOf(c.club)));
   if (c.step === 'make' && c.type === 'group') trail.push(groupName(...c.group.split('_')));
-  if (c.step === 'make' && c.type === 'club') trail.push('All four groups');
+  if (c.step === 'make' && c.type === 'club') trail.push('All four sessions');
   const trailLine = trail.length ? el('p', { class: 'pdf-trail', id: 'pdfTrail', text: trail.join(' › ') }) : null;
 
   let body;
   if (c.step === 'club') {
-    body = [el('h3', { text: 'Which club?' }),
-      el('div', { class: 'pdf-choices', id: 'pdfClubChoices' },
-        s.clubs.map(k => pdfChoiceButton(k.name, null, () => go({ club: k.code, step: 'group' }))),
-        pdfChoiceButton('Both clubs', 'The whole plan, every group', () => go({ type: 'whole', platform: 'all', step: 'make' })))];
-  } else if (c.step === 'group') {
     body = [el('h3', { text: 'Which group?' }),
+      el('div', { class: 'pdf-choices', id: 'pdfClubChoices' },
+        s.clubs.map(k => pdfChoiceButton(clubShortName(k), null, () => go({ club: k.code, step: 'group' }))),
+        pdfChoiceButton('Both', 'The whole plan, every session', () => go({ type: 'whole', platform: 'all', step: 'make' })))];
+  } else if (c.step === 'group') {
+    // Buttons show the category names ("Windows Beginners"); the trail above already
+    // says which club, and the full group name appears in the trail once chosen.
+    body = [el('h3', { text: 'Which session?' }),
       el('div', { class: 'pdf-choices', id: 'pdfGroupChoices' },
-        CATEGORY_ORDER.map(cat => pdfChoiceButton(groupName(c.club, cat), null,
+        CATEGORY_ORDER.map(cat => pdfChoiceButton((categoryOf(cat) || {}).name || groupName(c.club, cat), null,
           () => go({ type: 'group', group: c.club + '_' + cat, step: 'make' }), categoryOf(cat))),
-        pdfChoiceButton('All four groups', 'Side by side, one row per month', () => go({ type: 'club', step: 'make' }))),
+        pdfChoiceButton('All four', 'Side by side, one row per month', () => go({ type: 'club', step: 'make' }))),
       el('div', { class: 'card-foot' }, back('club'))];
   } else {
     if (!c.year) setPdfYear(c, thisCalendarYear());
@@ -5100,13 +5114,35 @@ function restorePlan(data, label) {
   return true;
 }
 
-/** Owners: choose a backup file, check it, confirm, restore. */
-function chooseBackupFile() {
-  // A file input not added to the page: click() opens the device's file picker
-  // (on the iPad: Files, including OneDrive). accept narrows the picker to .json.
-  const input = el('input', { type: 'file', accept: '.json,application/json' });
-  input.addEventListener('change', () => { if (input.files[0]) restoreFromFile(input.files[0]); });
-  input.click();
+/**
+ * Owners: the "Restore from a backup file…" control.
+ * It is a <label> wrapping a real file input, rather than a button that calls
+ * input.click() on an input kept out of the page. On the iPad, and especially
+ * in a board opened from a Home Screen shortcut, Safari can silently ignore a
+ * click() on an input that is not in the page, so nothing happened. Tapping a
+ * label is the same as tapping the input itself, so the Files picker (with
+ * OneDrive) always opens. The input is visually hidden but stays in the page.
+ * When Edit is off, the control is a plain button that explains what to do,
+ * instead of a greyed-out button that gives no response to a tap.
+ */
+/** Explain why a Settings action needs Edit on, instead of leaving its button silently greyed out. */
+function needEditFirst(what) {
+  return ask('Turn on Edit first', what + ', so it needs editing turned on. Switch on Edit (top right), then choose it again.', [['ok', 'OK', 'btn-dark']]);
+}
+function restoreControl() {
+  const text = 'Restore from a backup file…';
+  if (!canEditSettings()) {
+    return el('button', { type: 'button', class: 'btn', id: 'restoreBtn', on: { click: () =>
+      needEditFirst('Restoring replaces the whole plan') } }, text);
+  }
+  // accept: .json files only; on the iPad the Files picker greys out other files.
+  const input = el('input', { type: 'file', accept: '.json,application/json', class: 'visually-hidden', id: 'restoreFile' });
+  input.addEventListener('change', () => {
+    const file = input.files[0];
+    input.value = '';   // so choosing the same file again still fires 'change'
+    if (file) restoreFromFile(file);
+  });
+  return el('label', { class: 'btn', id: 'restoreBtn' }, input, text);
 }
 async function restoreFromFile(file) {
   let data;
@@ -5403,7 +5439,7 @@ function renderKeepSafeCard() {
   const owner = acct.isOwner;
   const card = el('section', { class: 'card keep-safe', attrs: { 'data-card': 'keepsafe' } }, el('h2', { text: 'Backup, history and archive' }));
   if (state.archiveView) {
-    card.append(el('p', { class: 'note', text: 'You are viewing the ' + state.archiveView + ' archive. Go back to the current plan to make a backup, see the history or archive a year.' }));
+    appendAll(card, el('p', { class: 'note', text: 'You are viewing the ' + state.archiveView + ' archive. Go back to the current plan to make a backup, see the history or archive a year.' }));
     return card;
   }
   // Backup
@@ -5411,18 +5447,17 @@ function renderKeepSafeCard() {
   const lastText = DateEngine.parseDate(last)
     ? DateEngine.formatDayDate(last, true) + (daysUntil(last) === 0 ? ' (today)' : ' (' + -daysUntil(last) + (daysUntil(last) === -1 ? ' day ago)' : ' days ago)'))
     : 'none yet';
-  card.append(
+  appendAll(card, 
     el('h3', { text: 'Backup' }),
     el('p', { text: 'Download a copy of the whole plan to keep, for example in OneDrive. GitHub keeps every save too, so this is an extra safeguard.' }),
     el('p', { class: 'note', text: 'Last backup downloaded on this device: ' + lastText + '.' }),
     el('div', { class: 'actions' },
       el('button', { type: 'button', class: 'btn btn-dark', on: { click: downloadBackup } }, icon('doc'), 'Download backup'),
-      owner ? el('button', { type: 'button', class: 'btn', disabled: !canEditSettings(), title: canEditSettings() ? '' : 'Turn on Edit to restore',
-        on: { click: chooseBackupFile } }, 'Restore from a backup file…') : null));
+      owner ? restoreControl() : null));
   if (!owner) return card;
   // History
   const list = el('div', { id: 'historyList' });
-  card.append(
+  appendAll(card, 
     el('h3', { text: 'History' }),
     el('p', { text: 'Every save is kept on GitHub. View any of the last ' + HISTORY_COUNT + ' saves, download it, or restore it as a new version.' }),
     list,
@@ -5430,13 +5465,14 @@ function renderKeepSafeCard() {
   // Archive
   const years = archivableYears(IS_TEST_COPY);
   const done = (settings().archivedYears || []);
-  card.append(
+  appendAll(card, 
     el('h3', { text: 'Yearly archive' }),
     el('p', { text: 'Once a year ends, its sessions can move to a separate archive file, keeping the board and the topic tray short. Archived years can still be viewed, and their PDFs made, by choosing them under Showing at the top of the board. From January the board asks; nothing moves until you confirm.' }),
     done.length ? el('p', { class: 'note', text: 'Archived so far: ' + done.join(', ') + '.' }) : null,
     years.length
-      ? el('div', { class: 'actions' }, years.map(y => el('button', { type: 'button', class: 'btn', disabled: !canEditSettings(),
-          title: canEditSettings() ? '' : 'Turn on Edit to archive', on: { click: () => archiveYear(y) } }, 'Archive ' + y + '…')))
+      ? el('div', { class: 'actions' }, years.map(y => el('button', { type: 'button', class: 'btn',
+          // Never greyed out: with Edit off a tap explains what to do (a disabled button gives no response on the iPad).
+          on: { click: () => canEditSettings() ? archiveYear(y) : needEditFirst('Archiving moves a year out of the plan') } }, 'Archive ' + y + '…')))
       : el('p', { class: 'note', text: 'Nothing to archive yet.' }),
     IS_TEST_COPY ? el('p', { class: 'note', text: 'Test copy only: the current year can be archived too, so this can be tried before January.' }) : null);
   setTimeout(drawHistory, 0);   // redraw a history list already loaded

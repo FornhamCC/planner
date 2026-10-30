@@ -2,7 +2,7 @@
   "meta": {
     "format": "gbcc-fcc-topic-board",
     "version": 1,
-    "savedAt": "2026-10-30T18:05:11.122Z",
+    "savedAt": "2026-10-30T18:06:05.131Z",
     "savedBy": "bernieonline"
   },
   "settings": {
@@ -145,6 +145,16 @@
       "briefing": "",
       "updatedAt": "2026-10-30T18:05:09.100Z",
       "updatedBy": "bernieonline"
+    },
+    "t_j5kok2vc": {
+      "title": "Securty for All",
+      "category": "EV",
+      "presenter": "BG",
+      "notesUrl": "",
+      "slidesUrl": "",
+      "briefing": "",
+      "updatedAt": "2026-10-30T18:06:03.115Z",
+      "updatedBy": "bernieonline"
     }
   },
   "sessions": {
@@ -185,6 +195,19 @@
       "status": "planned",
       "moved": false,
       "updatedAt": "2026-10-30T18:05:09.102Z",
+      "updatedBy": "bernieonline"
+    },
+    "2027-01_FCC_WM": {
+      "topicId": "t_j5kok2vc",
+      "club": "FCC",
+      "category": "WM",
+      "month": "2027-01",
+      "date": "2027-01-19",
+      "start": "14:00",
+      "end": "16:00",
+      "status": "planned",
+      "moved": false,
+      "updatedAt": "2026-10-30T18:06:03.117Z",
       "updatedBy": "bernieonline"
     }
   }

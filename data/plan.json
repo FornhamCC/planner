@@ -2,7 +2,7 @@
   "meta": {
     "format": "gbcc-fcc-topic-board",
     "version": 1,
-    "savedAt": "2026-10-17T12:01:13.319Z",
+    "savedAt": "2026-10-30T18:02:09.011Z",
     "savedBy": "bernieonline"
   },
   "settings": {
@@ -135,16 +135,6 @@
       "briefing": "The Fornham Computer Club Annual General Meeting takes the place of this month's Windows sessions. Times to be confirmed.",
       "updatedAt": "2026-10-15T13:00:00Z",
       "updatedBy": "initial setup"
-    },
-    "t_4egs8okm": {
-      "title": "Passwords",
-      "category": "WM",
-      "presenter": "",
-      "notesUrl": "https://1drv.ms/b/c/4c6785ee50aa5737/IQA3V6pQ7oVnIIBMONgDAAAAARIx-5QqeiYtUsvrDVqaV3k",
-      "slidesUrl": "",
-      "briefing": "",
-      "updatedAt": "2026-10-17T12:01:11.310Z",
-      "updatedBy": "bernieonline"
     }
   },
   "sessions": {
@@ -172,19 +162,6 @@
       "status": "planned",
       "moved": true,
       "updatedAt": "2026-10-15T14:32:25.168Z",
-      "updatedBy": "bernieonline"
-    },
-    "2026-10_FCC_WM": {
-      "topicId": "t_4egs8okm",
-      "club": "FCC",
-      "category": "WM",
-      "month": "2026-10",
-      "date": "2026-10-20",
-      "start": "14:00",
-      "end": "16:00",
-      "status": "planned",
-      "moved": false,
-      "updatedAt": "2026-10-17T11:50:52.050Z",
       "updatedBy": "bernieonline"
     }
   }

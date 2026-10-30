@@ -2,7 +2,7 @@
   "meta": {
     "format": "gbcc-fcc-topic-board",
     "version": 1,
-    "savedAt": "2026-10-30T18:02:42.399Z",
+    "savedAt": "2026-10-30T18:03:24.664Z",
     "savedBy": "bernieonline"
   },
   "settings": {
@@ -125,6 +125,31 @@
     ],
     "firstMonth": "2027-01"
   },
-  "topics": {},
-  "sessions": {}
+  "topics": {
+    "t_th02u7il": {
+      "title": "AGM",
+      "category": "EV",
+      "presenter": "BG",
+      "notesUrl": "",
+      "slidesUrl": "",
+      "briefing": "",
+      "updatedAt": "2026-10-30T18:03:22.652Z",
+      "updatedBy": "bernieonline"
+    }
+  },
+  "sessions": {
+    "2027-01_FCC_IM": {
+      "topicId": "t_th02u7il",
+      "club": "FCC",
+      "category": "IM",
+      "month": "2027-01",
+      "date": "2027-01-26",
+      "start": "14:00",
+      "end": "16:00",
+      "status": "planned",
+      "moved": false,
+      "updatedAt": "2026-10-30T18:03:22.655Z",
+      "updatedBy": "bernieonline"
+    }
+  }
 }

@@ -2,7 +2,7 @@
   "meta": {
     "format": "gbcc-fcc-topic-board",
     "version": 1,
-    "savedAt": "2026-11-17T18:19:03.304Z",
+    "savedAt": "2026-11-17T18:19:29.882Z",
     "savedBy": "bernieonline"
   },
   "settings": {
@@ -250,6 +250,16 @@
       "briefing": "",
       "updatedAt": "2026-11-17T18:17:10.969Z",
       "updatedBy": "bernieonline"
+    },
+    "t_t257hhbf": {
+      "title": "Security for All",
+      "category": "IM",
+      "presenter": "",
+      "notesUrl": "",
+      "slidesUrl": "",
+      "briefing": "",
+      "updatedAt": "2026-11-17T18:19:27.869Z",
+      "updatedBy": "bernieonline"
     }
   },
   "sessions": {
@@ -477,6 +487,19 @@
       "updatedBy": "bernieonline",
       "invitesSent": false,
       "invitesSentAt": ""
+    },
+    "2027-01_GBCC_IM": {
+      "topicId": "t_t257hhbf",
+      "club": "GBCC",
+      "category": "IM",
+      "month": "2027-01",
+      "date": "2027-01-25",
+      "start": "14:00",
+      "end": "16:00",
+      "status": "planned",
+      "moved": false,
+      "updatedAt": "2026-11-17T18:19:27.872Z",
+      "updatedBy": "bernieonline"
     }
   }
 }

@@ -2,7 +2,7 @@
   "meta": {
     "format": "gbcc-fcc-topic-board",
     "version": 1,
-    "savedAt": "2026-11-17T18:01:08.347Z",
+    "savedAt": "2026-11-17T18:01:45.461Z",
     "savedBy": "bernieonline"
   },
   "settings": {
@@ -160,6 +160,16 @@
       "briefing": "",
       "updatedAt": "2026-10-30T18:12:10.243Z",
       "updatedBy": "bernieonline"
+    },
+    "t_s8wqv123": {
+      "title": "Reviewing Files and Folder with Exercises",
+      "category": "WB",
+      "presenter": "",
+      "notesUrl": "",
+      "slidesUrl": "",
+      "briefing": "",
+      "updatedAt": "2026-11-17T18:01:43.449Z",
+      "updatedBy": "bernieonline"
     }
   },
   "sessions": {
@@ -213,6 +223,19 @@
       "status": "planned",
       "moved": false,
       "updatedAt": "2026-10-30T18:06:03.117Z",
+      "updatedBy": "bernieonline"
+    },
+    "2026-11_FCC_WB": {
+      "topicId": "t_s8wqv123",
+      "club": "FCC",
+      "category": "WB",
+      "month": "2026-11",
+      "date": "2026-11-17",
+      "start": "12:30",
+      "end": "14:00",
+      "status": "planned",
+      "moved": false,
+      "updatedAt": "2026-11-17T18:01:43.451Z",
       "updatedBy": "bernieonline"
     }
   }

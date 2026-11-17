@@ -2,7 +2,7 @@
   "meta": {
     "format": "gbcc-fcc-topic-board",
     "version": 1,
-    "savedAt": "2026-11-17T18:13:18.059Z",
+    "savedAt": "2026-11-17T18:14:06.555Z",
     "savedBy": "bernieonline"
   },
   "settings": {
@@ -401,10 +401,10 @@
       "month": "2026-11",
       "date": "2026-11-23",
       "start": "12:45",
-      "end": "14:00",
+      "end": "14:15",
       "status": "planned",
       "moved": true,
-      "updatedAt": "2026-11-17T18:12:24.987Z",
+      "updatedAt": "2026-11-17T18:14:04.547Z",
       "updatedBy": "bernieonline",
       "invitesSent": false,
       "invitesSentAt": ""

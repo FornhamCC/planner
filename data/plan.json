@@ -2,7 +2,7 @@
   "meta": {
     "format": "gbcc-fcc-topic-board",
     "version": 1,
-    "savedAt": "2026-11-17T18:16:24.883Z",
+    "savedAt": "2026-11-17T18:16:36.623Z",
     "savedBy": "bernieonline"
   },
   "settings": {
@@ -249,12 +249,14 @@
       "category": "IM",
       "month": "2027-01",
       "date": "2027-01-26",
-      "start": "14:00",
-      "end": "16:00",
+      "start": "14:15",
+      "end": "16:15",
       "status": "planned",
-      "moved": false,
-      "updatedAt": "2026-10-30T18:03:22.655Z",
-      "updatedBy": "bernieonline"
+      "moved": true,
+      "updatedAt": "2026-11-17T18:16:34.615Z",
+      "updatedBy": "bernieonline",
+      "invitesSent": false,
+      "invitesSentAt": ""
     },
     "2027-01_FCC_IB": {
       "topicId": "t_th02u7il",

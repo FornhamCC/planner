@@ -2,7 +2,7 @@
   "meta": {
     "format": "gbcc-fcc-topic-board",
     "version": 1,
-    "savedAt": "2026-11-17T18:04:00.755Z",
+    "savedAt": "2026-11-17T18:04:25.691Z",
     "savedBy": "bernieonline"
   },
   "settings": {
@@ -190,6 +190,16 @@
       "briefing": "",
       "updatedAt": "2026-11-17T18:03:58.737Z",
       "updatedBy": "bernieonline"
+    },
+    "t_u8osf8mv": {
+      "title": "Drop In Alan Valerie",
+      "category": "WB",
+      "presenter": "",
+      "notesUrl": "",
+      "slidesUrl": "",
+      "briefing": "",
+      "updatedAt": "2026-11-17T18:04:23.673Z",
+      "updatedBy": "bernieonline"
     }
   },
   "sessions": {
@@ -282,6 +292,19 @@
       "status": "planned",
       "moved": false,
       "updatedAt": "2026-11-17T18:03:58.739Z",
+      "updatedBy": "bernieonline"
+    },
+    "2026-11_GBCC_WB": {
+      "topicId": "t_u8osf8mv",
+      "club": "GBCC",
+      "category": "WB",
+      "month": "2026-11",
+      "date": "2026-11-23",
+      "start": "12:30",
+      "end": "14:00",
+      "status": "planned",
+      "moved": false,
+      "updatedAt": "2026-11-17T18:04:23.675Z",
       "updatedBy": "bernieonline"
     }
   }

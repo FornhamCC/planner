@@ -2,7 +2,7 @@
   "meta": {
     "format": "gbcc-fcc-topic-board",
     "version": 1,
-    "savedAt": "2026-11-17T18:16:36.623Z",
+    "savedAt": "2026-11-17T18:17:12.985Z",
     "savedBy": "bernieonline"
   },
   "settings": {
@@ -240,6 +240,16 @@
       "briefing": "",
       "updatedAt": "2026-11-17T18:11:05.497Z",
       "updatedBy": "bernieonline"
+    },
+    "t_obh84w4d": {
+      "title": "At Fcc",
+      "category": "IB",
+      "presenter": "",
+      "notesUrl": "",
+      "slidesUrl": "",
+      "briefing": "",
+      "updatedAt": "2026-11-17T18:17:10.969Z",
+      "updatedBy": "bernieonline"
     }
   },
   "sessions": {
@@ -452,6 +462,19 @@
       "updatedBy": "bernieonline",
       "invitesSent": false,
       "invitesSentAt": ""
+    },
+    "2027-01_GBCC_IB": {
+      "topicId": "t_obh84w4d",
+      "club": "GBCC",
+      "category": "IB",
+      "month": "2027-01",
+      "date": "2027-01-25",
+      "start": "12:30",
+      "end": "14:00",
+      "status": "planned",
+      "moved": false,
+      "updatedAt": "2026-11-17T18:17:10.972Z",
+      "updatedBy": "bernieonline"
     }
   }
 }

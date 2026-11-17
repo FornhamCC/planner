@@ -2,7 +2,7 @@
   "meta": {
     "format": "gbcc-fcc-topic-board",
     "version": 1,
-    "savedAt": "2026-11-17T18:01:45.461Z",
+    "savedAt": "2026-11-17T18:02:17.400Z",
     "savedBy": "bernieonline"
   },
   "settings": {
@@ -170,6 +170,16 @@
       "briefing": "",
       "updatedAt": "2026-11-17T18:01:43.449Z",
       "updatedBy": "bernieonline"
+    },
+    "t_r79x2z4j": {
+      "title": "AI as a Helper",
+      "category": "WM",
+      "presenter": "",
+      "notesUrl": "",
+      "slidesUrl": "",
+      "briefing": "",
+      "updatedAt": "2026-11-17T18:02:15.385Z",
+      "updatedBy": "bernieonline"
     }
   },
   "sessions": {
@@ -236,6 +246,19 @@
       "status": "planned",
       "moved": false,
       "updatedAt": "2026-11-17T18:01:43.451Z",
+      "updatedBy": "bernieonline"
+    },
+    "2026-11_FCC_WM": {
+      "topicId": "t_r79x2z4j",
+      "club": "FCC",
+      "category": "WM",
+      "month": "2026-11",
+      "date": "2026-11-17",
+      "start": "14:00",
+      "end": "16:00",
+      "status": "planned",
+      "moved": false,
+      "updatedAt": "2026-11-17T18:02:15.387Z",
       "updatedBy": "bernieonline"
     }
   }

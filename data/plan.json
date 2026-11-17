@@ -2,7 +2,7 @@
   "meta": {
     "format": "gbcc-fcc-topic-board",
     "version": 1,
-    "savedAt": "2026-11-17T18:06:07.718Z",
+    "savedAt": "2026-11-17T18:06:48.588Z",
     "savedBy": "bernieonline"
   },
   "settings": {
@@ -220,6 +220,16 @@
       "briefing": "",
       "updatedAt": "2026-11-17T18:06:05.713Z",
       "updatedBy": "bernieonline"
+    },
+    "t_662npcpz": {
+      "title": "AI - Just Chatting",
+      "category": "IB",
+      "presenter": "",
+      "notesUrl": "",
+      "slidesUrl": "",
+      "briefing": "",
+      "updatedAt": "2026-11-17T18:06:46.581Z",
+      "updatedBy": "bernieonline"
     }
   },
   "sessions": {
@@ -353,6 +363,19 @@
       "status": "planned",
       "moved": false,
       "updatedAt": "2026-11-17T18:06:05.715Z",
+      "updatedBy": "bernieonline"
+    },
+    "2026-11_FCC_IB": {
+      "topicId": "t_662npcpz",
+      "club": "FCC",
+      "category": "IB",
+      "month": "2026-11",
+      "date": "2026-11-24",
+      "start": "12:30",
+      "end": "14:00",
+      "status": "planned",
+      "moved": false,
+      "updatedAt": "2026-11-17T18:06:46.583Z",
       "updatedBy": "bernieonline"
     }
   }

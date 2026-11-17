@@ -2,7 +2,7 @@
   "meta": {
     "format": "gbcc-fcc-topic-board",
     "version": 1,
-    "savedAt": "2026-11-17T18:07:41.219Z",
+    "savedAt": "2026-11-17T18:07:45.824Z",
     "savedBy": "bernieonline"
   },
   "settings": {
@@ -324,21 +324,6 @@
       "updatedAt": "2026-11-17T18:03:58.739Z",
       "updatedBy": "bernieonline"
     },
-    "2026-11_GBCC_WB": {
-      "topicId": "t_u8osf8mv",
-      "club": "GBCC",
-      "category": "WB",
-      "month": "2026-11",
-      "date": "2026-11-23",
-      "start": "13:15",
-      "end": "14:00",
-      "status": "planned",
-      "moved": true,
-      "updatedAt": "2026-11-17T18:04:53.269Z",
-      "updatedBy": "bernieonline",
-      "invitesSent": false,
-      "invitesSentAt": ""
-    },
     "2026-11_GBCC_IM": {
       "topicId": "t_yu72l6rr",
       "club": "GBCC",
@@ -376,6 +361,19 @@
       "status": "planned",
       "moved": false,
       "updatedAt": "2026-11-17T18:06:46.583Z",
+      "updatedBy": "bernieonline"
+    },
+    "2026-11_GBCC_IB": {
+      "topicId": "t_u8osf8mv",
+      "club": "GBCC",
+      "category": "IB",
+      "month": "2026-11",
+      "date": "2026-11-30",
+      "start": "12:30",
+      "end": "14:00",
+      "status": "planned",
+      "moved": false,
+      "updatedAt": "2026-11-17T18:07:43.819Z",
       "updatedBy": "bernieonline"
     }
   }
